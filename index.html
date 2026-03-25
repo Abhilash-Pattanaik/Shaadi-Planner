@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#C9902A">
+<meta name="theme-color" content="#7C3AED">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Shaadi">
@@ -12,34 +12,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --gold:#C9902A;--gold-l:#F5E6C8;--gold-d:#8B6319;
-  --text:#2C2C2A;--text2:#5F5E5A;--text3:#888780;
-  --bg:#FAFAF8;--sur:#FFFFFF;--sur2:#F5F3EE;--sur3:#EEECEA;
-  --bor:rgba(0,0,0,0.1);
-  --red:#D85A30;--red-l:#FAECE7;
-  --green:#1D9E75;--green-l:#E1F5EE;
-  --blue:#185FA5;--blue-l:#E6F1FB;
-  --r:14px;--rs:8px;--sh:0 2px 12px rgba(0,0,0,0.08);
+  --gold:#7C3AED;--gold-l:#EDE9FE;--gold-d:#5B21B6;
+  --text:#1E1B2E;--text2:#4C4570;--text3:#9B8EC4;
+  --bg:#F8F7FF;--sur:#FFFFFF;--sur2:#F0EEFF;--sur3:#E8E4FF;
+  --bor:rgba(124,58,237,0.12);
+  --red:#C026D3;--red-l:#FDF4FF;
+  --green:#7C3AED;--green-l:#EDE9FE;
+  --blue:#A855F7;--blue-l:#F3E8FF;
+  --violet:#6D28D9;--lilac:#C4B5FD;--purple:#8B5CF6;
+  --r:14px;--rs:8px;--sh:0 2px 16px rgba(124,58,237,0.12);
 }
 html[data-theme="dark"]{
-  --gold:#E9B44C;--gold-l:#3A2E14;--gold-d:#F5C97A;
-  --text:#F1EFE8;--text2:#B4B2A9;--text3:#888780;
-  --bg:#1A1917;--sur:#242320;--sur2:#2E2C28;--sur3:#383632;
-  --bor:rgba(255,255,255,0.1);
-  --red:#F09575;--red-l:#2D1810;
-  --green:#5DCAA5;--green-l:#0A2520;
-  --blue:#85B7EB;--blue-l:#042C53;
-  --sh:0 2px 12px rgba(0,0,0,0.3);
+  --gold:#A78BFA;--gold-l:#2E1065;--gold-d:#DDD6FE;
+  --text:#EDE9FE;--text2:#C4B5FD;--text3:#7C6FAE;
+  --bg:#0F0A1E;--sur:#1A1030;--sur2:#241840;--sur3:#2E2050;
+  --bor:rgba(167,139,250,0.15);
+  --red:#E879F9;--red-l:#2D0A35;
+  --green:#A78BFA;--green-l:#2E1065;
+  --blue:#C084FC;--blue-l:#1A0A2E;
+  --sh:0 2px 16px rgba(0,0,0,0.4);
 }
 @media(prefers-color-scheme:dark){html:not([data-theme="light"]){
-  --gold:#E9B44C;--gold-l:#3A2E14;--gold-d:#F5C97A;
-  --text:#F1EFE8;--text2:#B4B2A9;--text3:#888780;
-  --bg:#1A1917;--sur:#242320;--sur2:#2E2C28;--sur3:#383632;
-  --bor:rgba(255,255,255,0.1);
-  --red:#F09575;--red-l:#2D1810;
-  --green:#5DCAA5;--green-l:#0A2520;
-  --blue:#85B7EB;--blue-l:#042C53;
-  --sh:0 2px 12px rgba(0,0,0,0.3);
+  --gold:#A78BFA;--gold-l:#2E1065;--gold-d:#DDD6FE;
+  --text:#EDE9FE;--text2:#C4B5FD;--text3:#7C6FAE;
+  --bg:#0F0A1E;--sur:#1A1030;--sur2:#241840;--sur3:#2E2050;
+  --bor:rgba(167,139,250,0.15);
+  --red:#E879F9;--red-l:#2D0A35;
+  --green:#A78BFA;--green-l:#2E1065;
+  --blue:#C084FC;--blue-l:#1A0A2E;
+  --sh:0 2px 16px rgba(0,0,0,0.4);
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
@@ -232,17 +233,17 @@ Object.defineProperty(window,'WEDDING_DATE',    {get:getWeddingDate});
 Object.defineProperty(window,'ENGAGEMENT_DATE', {get:getEngagementDate});
 
 const DEFAULT_CATS = [
-  {id:'venue',      name:'Venue',           emoji:'🏛️',color:'#C9902A',custom:false},
-  {id:'catering',   name:'Catering',        emoji:'🍽️',color:'#D85A30',custom:false},
-  {id:'decoration', name:'Decoration',      emoji:'🌸',color:'#D4537E',custom:false},
-  {id:'photo',      name:'Photography',     emoji:'📸',color:'#534AB7',custom:false},
-  {id:'clothes',    name:'Clothes',         emoji:'👗',color:'#993556',custom:false},
-  {id:'jewelry',    name:'Jewelry',         emoji:'💎',color:'#185FA5',custom:false},
-  {id:'mehndi',     name:'Mehendi/Sangeet', emoji:'🎶',color:'#1D9E75',custom:false},
-  {id:'engagement', name:'Engagement',      emoji:'💍',color:'#BA7517',custom:false},
-  {id:'honeymoon',  name:'Honeymoon',       emoji:'✈️',color:'#0F6E56',custom:false},
-  {id:'invitation', name:'Invitations',     emoji:'💌',color:'#3B6D11',custom:false},
-  {id:'misc',       name:'Miscellaneous',   emoji:'📦',color:'#888780',custom:false}
+  {id:'venue',      name:'Venue',           emoji:'🏛️',color:'#7C3AED',custom:false},
+  {id:'catering',   name:'Catering',        emoji:'🍽️',color:'#9333EA',custom:false},
+  {id:'decoration', name:'Decoration',      emoji:'🌸',color:'#C026D3',custom:false},
+  {id:'photo',      name:'Photography',     emoji:'📸',color:'#6D28D9',custom:false},
+  {id:'clothes',    name:'Clothes',         emoji:'👗',color:'#A855F7',custom:false},
+  {id:'jewelry',    name:'Jewelry',         emoji:'💎',color:'#7E22CE',custom:false},
+  {id:'mehndi',     name:'Mehendi/Sangeet', emoji:'🎶',color:'#8B5CF6',custom:false},
+  {id:'engagement', name:'Engagement',      emoji:'💍',color:'#D946EF',custom:false},
+  {id:'honeymoon',  name:'Honeymoon',       emoji:'✈️',color:'#6366F1',custom:false},
+  {id:'invitation', name:'Invitations',     emoji:'💌',color:'#A78BFA',custom:false},
+  {id:'misc',       name:'Miscellaneous',   emoji:'📦',color:'#9B8EC4',custom:false}
 ];
 
 const VENDOR_STATUSES = [
@@ -255,7 +256,7 @@ const VENDOR_STATUSES = [
 
 const TASK_CATS = ['Venue','Catering','Attire','Ceremony','Photography','Invitations','Beauty','Travel','Finance','Other'];
 
-const SWATCH_COLORS = ['#C9902A','#D85A30','#D4537E','#534AB7','#185FA5','#1D9E75','#0F6E56','#993556','#3B6D11','#888780'];
+const SWATCH_COLORS = ['#7C3AED','#9333EA','#A855F7','#6D28D9','#C026D3','#D946EF','#6366F1','#8B5CF6','#A78BFA','#9B8EC4'];
 const EMOJI_OPTS    = ['🎪','🎭','🎨','🎵','🚗','🏡','💐','🍰','🥂','💡','📷','🎁','🛍️','💻','🏋️'];
 
 const DEFAULT_TASKS = [
@@ -332,7 +333,9 @@ async function syncToSheets(silent=false) {
   try {
     const payload = JSON.stringify({
       goal:S.goal, engGoal:S.engGoal,
+      weddingDate:S.weddingDate, engagementDate:S.engagementDate,
       savings:S.savings, expenses:S.expenses,
+      vendors:S.vendors, tasks:S.tasks,
       exportedAt:new Date().toISOString()
     });
     // Use no-cors POST with URLSearchParams — works in sandboxed iframes
@@ -444,7 +447,7 @@ function renderPieChart(canvasId,labels,data,colors){
 function renderBarChart(canvasId,labels,data){
   destroyChart(canvasId);
   const ctx=document.getElementById(canvasId); if(!ctx) return;
-  const gold=getCSSVar('--gold')||'#C9902A';
+  const gold=getCSSVar('--gold')||'#8B5CF6';
   const tc=getCSSVar('--text2')||'#555';
   charts[canvasId]=new Chart(ctx,{
     type:'bar',
@@ -530,7 +533,7 @@ function renderHome() {
   const srcE = Object.entries(srcTotals);
   const srcLabels = srcE.map(([id]) => { const s = SAVINGS_SOURCES.find(x => x.id === id); return s ? s.emoji + ' ' + s.name : id; });
   const srcData   = srcE.map(([, v]) => v);
-  const srcColors = ['#C9902A', '#185FA5', '#1D9E75', '#D85A30', '#888780'];
+  const srcColors = ['#7C3AED','#A855F7','#6D28D9','#C026D3','#9333EA'];
 
   // ④ Cumulative Savings vs Spending — line
   const allDates = [...S.savings.map(s => ({ d: s.date, v: s.amount, t: 'save' })),
@@ -543,7 +546,7 @@ function renderHome() {
     const lbl = fmtDate(item.d).split(' ').slice(0, 2).join(' ');
     lineLabels.push(lbl); lineSave.push(cumSave); lineSpend.push(cumSpend);
   });
-  const gold  = '#C9902A', red = '#D85A30';
+  const gold  = '#8B5CF6', red = '#C026D3';
   const lineDs = [
     { label: 'Cumulative Savings', data: lineSave,  borderColor: gold, backgroundColor: gold + '22', fill: true, tension: 0.4, pointRadius: 2 },
     { label: 'Cumulative Spend',   data: lineSpend, borderColor: red,  backgroundColor: red  + '11', fill: true, tension: 0.4, pointRadius: 2 }
@@ -552,7 +555,7 @@ function renderHome() {
   // ⑤ Wedding vs Engagement spend — horizontal bar
   const evtLabels  = ['💒 Wedding', '💍 Engagement'];
   const evtData    = [wSpent, eSpent];
-  const evtColors  = ['#C9902A88', '#185FA588'];
+  const evtColors  = ['#8B5CF688', '#C026D388'];
 
   // Recent
   const recent = [...S.savings.map(s => ({ ...s, _type: 's' })), ...S.expenses.map(e => ({ ...e, _type: 'e' }))]
@@ -785,14 +788,27 @@ function renderSettings(){
   var raw=e.parameter.data;
   if(!raw) return ContentService.createTextOutput('no data');
   var data=JSON.parse(decodeURIComponent(raw));
+
   var s=ss.getSheetByName('Savings')||ss.insertSheet('Savings');
   s.clearContents();
   s.appendRow(['Month','Source','Amount','Note','Date']);
   (data.savings||[]).forEach(function(r){s.appendRow([r.month,r.source||'',r.amount,r.note||'',r.date]);});
+
   var ex=ss.getSheetByName('Expenses')||ss.insertSheet('Expenses');
   ex.clearContents();
   ex.appendRow(['Category','Amount','Description','Event','Date']);
-  (data.expenses||[]).forEach(function(r){ex.appendRow([r.category,r.amount,r.description||'',r.event||'wedding',r.date]);});
+  (data.expenses||[]).forEach(function(r){ex.appendRow([r.category,r.amount,r.description||'',r.event||'',r.date]);});
+
+  var vn=ss.getSheetByName('Vendors')||ss.insertSheet('Vendors');
+  vn.clearContents();
+  vn.appendRow(['Name','Category','Phone','Total Amount','Paid Amount','Balance','Status','Notes']);
+  (data.vendors||[]).forEach(function(r){vn.appendRow([r.name,r.category,r.phone||'',r.totalAmount||0,r.paidAmount||0,(r.totalAmount||0)-(r.paidAmount||0),r.status,r.notes||'']);});
+
+  var tk=ss.getSheetByName('Tasks')||ss.insertSheet('Tasks');
+  tk.clearContents();
+  tk.appendRow(['Task','Category','Event','Due Date','Done']);
+  (data.tasks||[]).forEach(function(r){tk.appendRow([r.title,r.category,r.event,r.dueDate||'',r.done?'Yes':'No']);});
+
   return ContentService.createTextOutput('ok');
 }
 function doGet(e){return doPost(e);
