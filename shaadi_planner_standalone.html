@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#C9902A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Shaadi">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23C9902A'/><text y='.9em' font-size='75' x='12'>💍</text></svg>">
+<title>Shaadi Planner 💍</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold:#C9902A;--gold-l:#F5E6C8;--gold-d:#8B6319;
+  --text:#2C2C2A;--text2:#5F5E5A;--text3:#888780;
+  --bg:#FAFAF8;--sur:#FFFFFF;--sur2:#F5F3EE;--sur3:#EEECEA;
+  --bor:rgba(0,0,0,0.1);
+  --red:#D85A30;--red-l:#FAECE7;
+  --green:#1D9E75;--green-l:#E1F5EE;
+  --blue:#185FA5;--blue-l:#E6F1FB;
+  --r:14px;--rs:8px;--sh:0 2px 12px rgba(0,0,0,0.08);
+}
+html[data-theme="dark"]{
+  --gold:#E9B44C;--gold-l:#3A2E14;--gold-d:#F5C97A;
+  --text:#F1EFE8;--text2:#B4B2A9;--text3:#888780;
+  --bg:#1A1917;--sur:#242320;--sur2:#2E2C28;--sur3:#383632;
+  --bor:rgba(255,255,255,0.1);
+  --red:#F09575;--red-l:#2D1810;
+  --green:#5DCAA5;--green-l:#0A2520;
+  --blue:#85B7EB;--blue-l:#042C53;
+  --sh:0 2px 12px rgba(0,0,0,0.3);
+}
+@media(prefers-color-scheme:dark){html:not([data-theme="light"]){
+  --gold:#E9B44C;--gold-l:#3A2E14;--gold-d:#F5C97A;
+  --text:#F1EFE8;--text2:#B4B2A9;--text3:#888780;
+  --bg:#1A1917;--sur:#242320;--sur2:#2E2C28;--sur3:#383632;
+  --bor:rgba(255,255,255,0.1);
+  --red:#F09575;--red-l:#2D1810;
+  --green:#5DCAA5;--green-l:#0A2520;
+  --blue:#85B7EB;--blue-l:#042C53;
+  --sh:0 2px 12px rgba(0,0,0,0.3);
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
+.serif{font-family:'Playfair Display',serif;}
+/* Header */
+.hdr{background:var(--sur);padding:12px 16px 10px;border-bottom:0.5px solid var(--bor);position:sticky;top:0;z-index:100;}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;}
+.hdr-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold);}
+.hdr-act{display:flex;gap:8px;}
+.icon-btn{background:var(--sur2);border:0.5px solid var(--bor);border-radius:var(--rs);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;user-select:none;}
+.cd-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.cd-pill{background:var(--gold-l);color:var(--gold-d);font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
+/* Tabs */
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 0 7px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:9px;font-family:'DM Sans',sans-serif;transition:color 0.2s;}
+.tb.active{color:var(--gold);}
+.ti{font-size:18px;margin-bottom:3px;line-height:1;}
+/* Pages */
+.pg{padding:14px 14px 88px;display:none;}
+.pg.active{display:block;}
+/* Cards */
+.card{background:var(--sur);border-radius:var(--r);border:0.5px solid var(--bor);padding:14px;margin-bottom:10px;}
+.card-t{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:8px;}
+.big-n{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;}
+.pb{height:8px;background:var(--sur2);border-radius:4px;overflow:hidden;margin:10px 0 5px;}
+.pf{height:100%;border-radius:4px;transition:width 0.6s;}
+.pl{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.sc{background:var(--sur2);border-radius:var(--rs);padding:12px 14px;}
+.sl{font-size:11px;color:var(--text3);margin-bottom:4px;}
+.sv{font-size:17px;font-weight:500;font-family:'Playfair Display',serif;}
+.sv.g{color:var(--green);}.sv.r{color:var(--red);}.sv.o{color:var(--gold);}.sv.b{color:var(--blue);}
+/* Pills */
+.pills{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;}
+.pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--bor);background:var(--sur2);color:var(--text2);white-space:nowrap;user-select:none;}
+.pill.active{background:var(--gold-l);color:var(--gold-d);border-color:var(--gold);}
+/* List items */
+.li{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bor);}
+.li:last-child{border-bottom:none;}
+.li-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.li-info{flex:1;min-width:0;}
+.li-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.li-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.li-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.li-amt{font-size:13px;font-weight:500;white-space:nowrap;}
+.li-amt.g{color:var(--green);}.li-amt.r{color:var(--red);}
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:500;}
+.badge.g{background:var(--green-l);color:var(--green);}
+.badge.r{background:var(--red-l);color:var(--red);}
+.badge.o{background:var(--gold-l);color:var(--gold-d);}
+.badge.b{background:var(--blue-l);color:var(--blue);}
+.badge.gr{background:var(--sur2);color:var(--text3);}
+/* Buttons */
+.btn{width:100%;padding:12px;background:var(--gold);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.btn:active{opacity:0.85;}
+.btn.sec{background:var(--sur2);color:var(--text2);border:0.5px solid var(--bor);margin-top:8px;}
+.btn-sm{padding:6px 12px;background:var(--gold);color:#fff;border:none;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.btn-sm.sec{background:var(--sur2);color:var(--text2);border:0.5px solid var(--bor);}
+.btn-ic{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px;}
+.btn-ic:active{color:var(--red);}
+/* FAB */
+.fab{position:fixed;bottom:78px;right:18px;width:50px;height:50px;border-radius:50%;background:var(--gold);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh);font-size:24px;color:#fff;z-index:90;transition:transform 0.2s;}
+.fab:active{transform:scale(0.92);}
+/* Modal */
+.mbd{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end;justify-content:center;}
+.mbd.open{display:flex;}
+.modal{background:var(--sur);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0));max-height:92vh;overflow-y:auto;}
+.m-handle{width:36px;height:4px;background:var(--bor);border-radius:2px;margin:0 auto 14px;}
+.m-title{font-family:'Playfair Display',serif;font-size:19px;margin-bottom:14px;}
+/* Forms */
+.fg{margin-bottom:12px;}
+.fl{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;display:block;}
+.fi{width:100%;padding:10px 12px;background:var(--sur2);border:0.5px solid var(--bor);border-radius:var(--rs);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+.fi:focus{border-color:var(--gold);}
+select.fi{appearance:none;cursor:pointer;}
+.fi::placeholder{color:var(--text3);}
+/* Tasks */
+.task-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bor);}
+.task-item:last-child{border-bottom:none;}
+.task-cb{width:20px;height:20px;border-radius:6px;border:1.5px solid var(--bor);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:1px;font-size:11px;transition:all 0.15s;}
+.task-cb.done{background:var(--green);border-color:var(--green);color:#fff;}
+.task-info{flex:1;min-width:0;}
+.task-title{font-size:13px;font-weight:500;}
+.task-title.done{text-decoration:line-through;color:var(--text3);}
+.task-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+/* Vendors */
+.vendor-card{background:var(--sur);border-radius:var(--r);border:0.5px solid var(--bor);padding:14px;margin-bottom:8px;}
+.vendor-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.vendor-name{font-size:15px;font-weight:500;}
+.vendor-cat{font-size:12px;color:var(--text3);margin-top:2px;}
+.vendor-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:10px;}
+.vendor-amt{font-size:13px;}
+.vendor-actions{display:flex;gap:8px;}
+/* Settings */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--bor);gap:10px;}
+.set-row:last-child{border-bottom:none;}
+.set-info{flex:1;}
+.set-t{font-size:14px;font-weight:500;}
+.set-d{font-size:12px;color:var(--text3);margin-top:2px;}
+.theme-toggle{display:flex;gap:4px;}
+.theme-opt{padding:5px 10px;border-radius:var(--rs);border:0.5px solid var(--bor);background:var(--sur2);color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.theme-opt.active{background:var(--gold);color:#fff;border-color:var(--gold);}
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.exp-card{background:var(--sur2);border-radius:var(--rs);padding:14px;text-align:center;cursor:pointer;border:0.5px solid var(--bor);}
+.exp-card:active{border-color:var(--gold);}
+.code-b{background:var(--sur2);border-radius:var(--rs);padding:10px 12px;font-family:monospace;font-size:11px;color:var(--text2);margin:8px 0;border-left:2px solid var(--gold);white-space:pre-wrap;word-break:break-all;}
+.step{display:flex;gap:10px;padding:5px 0;font-size:13px;color:var(--text2);}
+.step-n{width:20px;height:20px;border-radius:50%;background:var(--gold-l);color:var(--gold-d);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;}
+/* Cat chips */
+.cat-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+.cat-chip{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:20px;background:var(--sur2);border:0.5px solid var(--bor);font-size:13px;}
+.cat-chip .del{color:var(--text3);cursor:pointer;margin-left:2px;font-size:12px;}
+/* Color picker */
+.color-swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.swatch{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+.swatch.selected{border-color:var(--text);}
+/* Emoji row */
+.emoji-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.emoji-opt{width:34px;height:34px;border-radius:var(--rs);background:var(--sur2);border:0.5px solid var(--bor);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;}
+.emoji-opt.selected{border-color:var(--gold);background:var(--gold-l);}
+/* Chart */
+.chart-wrap{position:relative;margin:8px 0;}
+.chart-wrap.h200{height:200px;}
+.chart-wrap.h180{height:180px;}
+.chart-wrap.h160{height:160px;}
+.chart-empty{padding:28px 0;text-align:center;font-size:13px;color:var(--text3);border:1px dashed var(--bor);border-radius:var(--rs);margin:4px 0;}
+/* Empty */
+.empty{text-align:center;padding:32px 20px;color:var(--text3);font-size:14px;}
+.empty-ic{font-size:32px;margin-bottom:8px;}
+/* Toast */
+.toast{position:fixed;bottom:98px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+/* Goal banner */
+.goal-b{background:var(--gold-l);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.goal-b-text{flex:1;font-size:13px;color:var(--gold-d);}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-title serif">Shaadi Planner 💍</div>
+    <div class="hdr-act">
+      <div class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Toggle theme">✨</div>
+      <div class="icon-btn" id="sync-btn" onclick="manualSync()" title="Sync"><span id="sync-ic">☁️</span></div>
+    </div>
+  </div>
+  <div class="cd-row">
+    <div class="cd-pill" id="cd-w">💒 Loading...</div>
+    <div class="cd-pill" id="cd-e">💍 Loading...</div>
+  </div>
+</div>
+
+<div class="pg active" id="pg-home"></div>
+<div class="pg" id="pg-money"></div>
+<div class="pg" id="pg-tasks"></div>
+<div class="pg" id="pg-vendors"></div>
+<div class="pg" id="pg-settings"></div>
+
+<div class="tab-bar">
+  <button class="tb active" onclick="goTab('home')" id="tb-home"><div class="ti">🏠</div>Home</button>
+  <button class="tb" onclick="goTab('money')" id="tb-money"><div class="ti">💰</div>Money</button>
+  <button class="tb" onclick="goTab('tasks')" id="tb-tasks"><div class="ti">✅</div>Tasks</button>
+  <button class="tb" onclick="goTab('vendors')" id="tb-vendors"><div class="ti">🤝</div>Vendors</button>
+  <button class="tb" onclick="goTab('settings')" id="tb-settings"><div class="ti">⚙️</div>Settings</button>
+</div>
+
+<button class="fab" id="fab" onclick="openAddModal()">+</button>
+
+<div class="mbd" id="modal" onclick="mClickOut(event)">
+  <div class="modal"><div class="m-handle"></div><div id="mc"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+// ── Constants ──────────────────────────────────────────
+const SAVINGS_SOURCES = [
+  {id:'jupiter', name:'Jupiter',       emoji:'🟣'},
+  {id:'fd',      name:'FD',            emoji:'🏦'},
+  {id:'mf',      name:'Mutual Fund',   emoji:'📈'},
+  {id:'savings', name:'Savings A/C',   emoji:'💳'},
+  {id:'cash',    name:'Cash',          emoji:'💵'},
+];
+function getWeddingDate()    { return new Date(S.weddingDate    || '2026-12-02'); }
+function getEngagementDate() { return new Date(S.engagementDate || '2026-07-01'); }
+// keep backward-compat references
+Object.defineProperty(window,'WEDDING_DATE',    {get:getWeddingDate});
+Object.defineProperty(window,'ENGAGEMENT_DATE', {get:getEngagementDate});
+
+const DEFAULT_CATS = [
+  {id:'venue',      name:'Venue',           emoji:'🏛️',color:'#C9902A',custom:false},
+  {id:'catering',   name:'Catering',        emoji:'🍽️',color:'#D85A30',custom:false},
+  {id:'decoration', name:'Decoration',      emoji:'🌸',color:'#D4537E',custom:false},
+  {id:'photo',      name:'Photography',     emoji:'📸',color:'#534AB7',custom:false},
+  {id:'clothes',    name:'Clothes',         emoji:'👗',color:'#993556',custom:false},
+  {id:'jewelry',    name:'Jewelry',         emoji:'💎',color:'#185FA5',custom:false},
+  {id:'mehndi',     name:'Mehendi/Sangeet', emoji:'🎶',color:'#1D9E75',custom:false},
+  {id:'engagement', name:'Engagement',      emoji:'💍',color:'#BA7517',custom:false},
+  {id:'honeymoon',  name:'Honeymoon',       emoji:'✈️',color:'#0F6E56',custom:false},
+  {id:'invitation', name:'Invitations',     emoji:'💌',color:'#3B6D11',custom:false},
+  {id:'misc',       name:'Miscellaneous',   emoji:'📦',color:'#888780',custom:false}
+];
+
+const VENDOR_STATUSES = [
+  {id:'shortlisted',label:'Shortlisted',cls:'gr'},
+  {id:'booked',     label:'Booked',      cls:'b'},
+  {id:'advance',    label:'Advance Paid',cls:'o'},
+  {id:'paid',       label:'Fully Paid',  cls:'g'},
+  {id:'cancelled',  label:'Cancelled',   cls:'r'}
+];
+
+const TASK_CATS = ['Venue','Catering','Attire','Ceremony','Photography','Invitations','Beauty','Travel','Finance','Other'];
+
+const SWATCH_COLORS = ['#C9902A','#D85A30','#D4537E','#534AB7','#185FA5','#1D9E75','#0F6E56','#993556','#3B6D11','#888780'];
+const EMOJI_OPTS    = ['🎪','🎭','🎨','🎵','🚗','🏡','💐','🍰','🥂','💡','📷','🎁','🛍️','💻','🏋️'];
+
+const DEFAULT_TASKS = [
+  {title:'Book wedding venue',     category:'Venue',       event:'wedding',    dueDate:'',done:false},
+  {title:'Book caterer',           category:'Catering',    event:'wedding',    dueDate:'',done:false},
+  {title:'Book photographer',      category:'Photography', event:'wedding',    dueDate:'',done:false},
+  {title:'Order wedding invitations',category:'Invitations',event:'wedding',   dueDate:'2026-11-01',done:false},
+  {title:'Book engagement venue',  category:'Venue',       event:'engagement', dueDate:'',done:false},
+  {title:'Bridal outfit shopping', category:'Attire',      event:'wedding',    dueDate:'',done:false},
+  {title:'Book makeup artist',     category:'Beauty',      event:'wedding',    dueDate:'',done:false},
+  {title:'Plan honeymoon',         category:'Travel',      event:'wedding',    dueDate:'',done:false},
+  {title:'Set savings goal',       category:'Finance',     event:'wedding',    dueDate:'',done:false},
+];
+
+// ── State ──────────────────────────────────────────────
+let S = {
+  goal:0, engGoal:0,
+  weddingDate:'2026-12-02', engagementDate:'2026-07-01',
+  savings:[], expenses:[], vendors:[], tasks:[],
+  customCats:[],
+  sheetsUrl:'', lastSync:null,
+  theme:'auto'
+};
+
+// ── Storage (localStorage — works in any browser) ──────
+async function loadS() {
+  try { const r = localStorage.getItem('shaadi_v3'); if(r) S = {...S,...JSON.parse(r)}; } catch(e) {}
+}
+async function saveS() { try { localStorage.setItem('shaadi_v3', JSON.stringify(S)); } catch(e) {} }
+
+// ── Helpers ────────────────────────────────────────────
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function allCats() { return [...DEFAULT_CATS,...S.customCats]; }
+function getCat(id) { return allCats().find(c=>c.id===id)||DEFAULT_CATS[DEFAULT_CATS.length-1]; }
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function daysLeft(d) { return Math.max(0,Math.ceil((d-new Date())/86400000)); }
+function fmtDate(d) { return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function fmt(n) { return '₹'+Math.round(n).toLocaleString('en-IN'); }
+
+function showToast(msg,ms=2500) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),ms);
+}
+
+// ── Theme ──────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme',t||'auto');
+  const icons={light:'☀️',dark:'🌙',auto:'✨'};
+  document.getElementById('theme-btn').textContent = icons[t||'auto'];
+}
+function cycleTheme() {
+  const order=['auto','light','dark'];
+  S.theme=order[(order.indexOf(S.theme||'auto')+1)%3];
+  applyTheme(S.theme); saveS();
+  if(curTab==='settings') renderSettings();
+}
+
+// ── Countdowns ─────────────────────────────────────────
+function updateCDs() {
+  document.getElementById('cd-w').textContent = `💒 Wedding: ${daysLeft(getWeddingDate())} days`;
+  document.getElementById('cd-e').textContent = `💍 Engagement: ~${daysLeft(getEngagementDate())} days`;
+}
+
+// ── Sync ───────────────────────────────────────────────
+let syncStatus='idle';
+function updateSyncIcon() {
+  const icons={idle:'☁️',syncing:'🔄',synced:'✅',error:'⚠️'};
+  document.getElementById('sync-ic').textContent=icons[syncStatus]||'☁️';
+}
+async function syncToSheets(silent=false) {
+  if(!S.sheetsUrl){if(!silent){showToast('⚙️ Set up Sheets URL in Settings');goTab('settings');}return;}
+  syncStatus='syncing'; updateSyncIcon();
+  if(!silent) showToast('☁️ Syncing...');
+  try {
+    const payload = JSON.stringify({
+      goal:S.goal, engGoal:S.engGoal,
+      savings:S.savings, expenses:S.expenses,
+      exportedAt:new Date().toISOString()
+    });
+    // Use no-cors POST with URLSearchParams — works in sandboxed iframes
+    const body = new URLSearchParams();
+    body.set('data', payload);
+    const resp = await fetch(S.sheetsUrl, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: body.toString()
+    });
+    // no-cors always returns opaque — reaching here means network succeeded
+    syncStatus='synced'; S.lastSync=new Date().toISOString(); await saveS();
+    if(!silent) showToast('✅ Synced to Google Sheets!');
+    if(curTab==='settings') renderSettings();
+  } catch(err) {
+    // Fallback: open URL in hidden iframe (works even when fetch is blocked)
+    try {
+      const payload = encodeURIComponent(JSON.stringify({
+        goal:S.goal, engGoal:S.engGoal,
+        savings:S.savings.slice(-50), expenses:S.expenses.slice(-100),
+        exportedAt:new Date().toISOString()
+      }));
+      const url = S.sheetsUrl + '?data=' + payload;
+      const ifr = document.createElement('iframe');
+      ifr.style.display='none'; ifr.src=url;
+      document.body.appendChild(ifr);
+      setTimeout(()=>{ try{document.body.removeChild(ifr);}catch(e){} }, 5000);
+      syncStatus='synced'; S.lastSync=new Date().toISOString(); await saveS();
+      if(!silent) showToast('✅ Synced! Verify in your Sheet.');
+      if(curTab==='settings') renderSettings();
+    } catch(err2) {
+      syncStatus='error';
+      if(!silent) showToast('❌ Sync blocked by browser. Download CSV instead.');
+    }
+  }
+  updateSyncIcon();
+}
+async function manualSync() { if(!S.sheetsUrl){goTab('settings');return;} await syncToSheets(); }
+
+// ── Export ─────────────────────────────────────────────
+function exportCSV(type) {
+  let csv='',fn='';
+  if(type==='savings'){
+    csv='Month,Amount (INR),Note,Date\n';
+    S.savings.forEach(s=>{csv+=`"${s.month||''}",${s.amount},"${s.note||''}","${fmtDate(s.date)}"\n`;});
+    fn='shaadi_savings.csv';
+  } else if(type==='expenses'){
+    csv='Category,Amount (INR),Description,Event,Date\n';
+    S.expenses.forEach(e=>{csv+=`"${getCat(e.category).name}",${e.amount},"${e.description||''}","${e.event||'wedding'}","${fmtDate(e.date)}"\n`;});
+    fn='shaadi_expenses.csv';
+  } else if(type==='vendors'){
+    csv='Name,Phone,Category,Total Amount,Paid Amount,Status,Notes\n';
+    S.vendors.forEach(v=>{csv+=`"${v.name}","${v.phone||''}","${getCat(v.category).name}",${v.totalAmount||0},${v.paidAmount||0},"${v.status}","${v.notes||''}"\n`;});
+    fn='shaadi_vendors.csv';
+  } else if(type==='tasks'){
+    csv='Task,Category,Event,Due Date,Done\n';
+    S.tasks.forEach(t=>{csv+=`"${t.title}","${t.category}","${t.event}","${t.dueDate||''}","${t.done?'Yes':'No'}"\n`;});
+    fn='shaadi_tasks.csv';
+  } else {
+    csv='Type,Details,Amount,Date\n';
+    S.savings.forEach(s=>{csv+=`"Savings","${s.month||''}",${s.amount},"${fmtDate(s.date)}"\n`;});
+    S.expenses.forEach(e=>{csv+=`"Expense","${getCat(e.category).name} - ${e.description||''}",${e.amount},"${fmtDate(e.date)}"\n`;});
+    fn='shaadi_all.csv';
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=fn; a.click(); showToast('📥 Downloaded!');
+}
+function exportJSON() {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,2)],{type:'application/json'}));
+  a.download='shaadi_backup.json'; a.click(); showToast('📦 Backup downloaded!');
+}
+
+// ── Tab ────────────────────────────────────────────────
+let curTab='home';
+function goTab(tab) {
+  curTab=tab;
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+tab).classList.add('active');
+  document.getElementById('tb-'+tab).classList.add('active');
+  document.getElementById('fab').style.display=tab==='settings'?'none':'flex';
+  renderTab();
+}
+function renderTab() {
+  if(curTab==='home') renderHome();
+  else if(curTab==='money') renderMoney();
+  else if(curTab==='tasks') renderTasks();
+  else if(curTab==='vendors') renderVendors();
+  else renderSettings();
+}
+
+// ── Charts ─────────────────────────────────────────────
+const charts={};
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+function getCSSVar(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+function renderPieChart(canvasId,labels,data,colors){
+  destroyChart(canvasId);
+  const ctx=document.getElementById(canvasId); if(!ctx||!data.length) return;
+  charts[canvasId]=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:2,borderColor:getCSSVar('--sur')||'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',
+      plugins:{legend:{position:'right',labels:{font:{size:10,family:'DM Sans'},color:getCSSVar('--text')||'#222',boxWidth:10,padding:8}}}}
+  });
+}
+function renderBarChart(canvasId,labels,data){
+  destroyChart(canvasId);
+  const ctx=document.getElementById(canvasId); if(!ctx) return;
+  const gold=getCSSVar('--gold')||'#C9902A';
+  const tc=getCSSVar('--text2')||'#555';
+  charts[canvasId]=new Chart(ctx,{
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:gold+'88',borderColor:gold,borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10},color:tc}},
+        y:{grid:{color:getCSSVar('--bor')},ticks:{font:{size:10},color:tc,callback:v=>'₹'+Math.round(v/1000)+'k'}}
+      }}
+  });
+}
+
+// ── Charts helpers ────────────────────────────────────
+function renderLineChart(canvasId, labels, datasets) {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId); if (!ctx) return;
+  const tc = getCSSVar('--text2') || '#555';
+  charts[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 10, family: 'DM Sans' }, color: tc, boxWidth: 10 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, color: tc } },
+        y: { grid: { color: getCSSVar('--bor') }, ticks: { font: { size: 10 }, color: tc, callback: v => '₹' + Math.round(v / 1000) + 'k' } }
+      }
+    }
+  });
+}
+function renderHBarChart(canvasId, labels, data, colors) {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId); if (!ctx) return;
+  const tc = getCSSVar('--text2') || '#555';
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, borderSkipped: false }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: getCSSVar('--bor') }, ticks: { font: { size: 10 }, color: tc, callback: v => '₹' + Math.round(v / 1000) + 'k' } },
+        y: { grid: { display: false }, ticks: { font: { size: 11 }, color: tc } }
+      }
+    }
+  });
+}
+
+// ── Home / Dashboard ───────────────────────────────────
+function renderHome() {
+  const wd = getWeddingDate(), ed = getEngagementDate();
+  const totalSaved = S.savings.reduce((a, x) => a + x.amount, 0);
+  const wExp = S.expenses.filter(e => e.event !== 'engagement');
+  const eExp = S.expenses.filter(e => e.event === 'engagement');
+  const wSpent = wExp.reduce((a, x) => a + x.amount, 0);
+  const eSpent = eExp.reduce((a, x) => a + x.amount, 0);
+  const totalSpent = wSpent + eSpent;
+  const balance = totalSaved - totalSpent;
+  const goal = S.goal || 0;
+  const engGoal = S.engGoal || 0;
+  const progress = goal > 0 ? Math.min(100, (totalSaved / goal) * 100) : 0;
+  const spendPct  = goal > 0 ? Math.min(100, (totalSpent / goal) * 100) : 0;
+
+  // ① Expense by Category — donut
+  const catTotals = {};
+  S.expenses.forEach(e => { catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; });
+  const catE = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const pieLabels = catE.map(([id]) => getCat(id).emoji + ' ' + getCat(id).name);
+  const pieData   = catE.map(([, v]) => v);
+  const pieColors = catE.map(([id]) => getCat(id).color);
+
+  // ② Monthly savings — bar
+  const mMap = {};
+  S.savings.forEach(s => { const m = s.month || fmtDate(s.date); mMap[m] = (mMap[m] || 0) + s.amount; });
+  const mE = Object.entries(mMap).slice(-8);
+  const barLabels = mE.map(([k]) => k.split(' ')[0].slice(0, 3));
+  const barData   = mE.map(([, v]) => v);
+
+  // ③ Savings by source — donut
+  const srcTotals = {};
+  S.savings.forEach(s => { const src = s.source || 'savings'; srcTotals[src] = (srcTotals[src] || 0) + s.amount; });
+  const srcE = Object.entries(srcTotals);
+  const srcLabels = srcE.map(([id]) => { const s = SAVINGS_SOURCES.find(x => x.id === id); return s ? s.emoji + ' ' + s.name : id; });
+  const srcData   = srcE.map(([, v]) => v);
+  const srcColors = ['#C9902A', '#185FA5', '#1D9E75', '#D85A30', '#888780'];
+
+  // ④ Cumulative Savings vs Spending — line
+  const allDates = [...S.savings.map(s => ({ d: s.date, v: s.amount, t: 'save' })),
+                    ...S.expenses.map(e => ({ d: e.date, v: e.amount, t: 'spend' }))]
+    .sort((a, b) => new Date(a.d) - new Date(b.d));
+  let cumSave = 0, cumSpend = 0;
+  const lineLabels = [], lineSave = [], lineSpend = [];
+  allDates.forEach(item => {
+    if (item.t === 'save') cumSave += item.v; else cumSpend += item.v;
+    const lbl = fmtDate(item.d).split(' ').slice(0, 2).join(' ');
+    lineLabels.push(lbl); lineSave.push(cumSave); lineSpend.push(cumSpend);
+  });
+  const gold  = '#C9902A', red = '#D85A30';
+  const lineDs = [
+    { label: 'Cumulative Savings', data: lineSave,  borderColor: gold, backgroundColor: gold + '22', fill: true, tension: 0.4, pointRadius: 2 },
+    { label: 'Cumulative Spend',   data: lineSpend, borderColor: red,  backgroundColor: red  + '11', fill: true, tension: 0.4, pointRadius: 2 }
+  ];
+
+  // ⑤ Wedding vs Engagement spend — horizontal bar
+  const evtLabels  = ['💒 Wedding', '💍 Engagement'];
+  const evtData    = [wSpent, eSpent];
+  const evtColors  = ['#C9902A88', '#185FA588'];
+
+  // Recent
+  const recent = [...S.savings.map(s => ({ ...s, _type: 's' })), ...S.expenses.map(e => ({ ...e, _type: 'e' }))]
+    .sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  const recentHTML = recent.map(item => {
+    if (item._type === 's') {
+      const src = SAVINGS_SOURCES.find(x => x.id === (item.source || 'savings'));
+      return `<div class="li"><div class="li-icon" style="background:var(--green-l)">💰</div><div class="li-info"><div class="li-title">${item.month || 'Savings'}</div><div class="li-sub">${src ? src.emoji + ' ' + src.name : 'Savings'} · ${fmtDate(item.date)}</div></div><div class="li-amt g">+${fmt(item.amount)}</div></div>`;
+    }
+    const cat = getCat(item.category);
+    return `<div class="li"><div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div><div class="li-info"><div class="li-title">${item.description || cat.name}</div><div class="li-sub">${cat.name}${item.event === 'engagement' ? ' · Engagement' : ''} · ${fmtDate(item.date)}</div></div><div class="li-amt r">-${fmt(item.amount)}</div></div>`;
+  }).join('');
+
+  const tasksDone  = S.tasks.filter(t => t.done).length;
+  const tasksTotal = S.tasks.length;
+
+  document.getElementById('pg-home').innerHTML = `
+    ${!goal ? `<div class="goal-b"><div style="font-size:22px">🎯</div><div class="goal-b-text"><strong>Set your wedding budget</strong><br>Track your savings progress</div><button class="btn-sm" onclick="openGoalModal()">Set Budget</button></div>` : ''}
+    <div class="card">
+      <div class="card-t">Total Savings</div>
+      <div class="big-n serif">${fmt(totalSaved)}</div>
+      ${goal ? `<div class="pb"><div class="pf" style="width:${progress.toFixed(0)}%;background:var(--gold)"></div></div><div class="pl"><span>${progress.toFixed(0)}% of goal</span><span>Goal: ${fmt(goal)}</span></div>` : ''}
+    </div>
+    <div class="sg">
+      <div class="sc"><div class="sl">Net Balance</div><div class="sv ${balance >= 0 ? 'g' : 'r'}">${fmt(balance)}</div></div>
+      <div class="sc"><div class="sl">Total Spent</div><div class="sv r">${fmt(totalSpent)}</div></div>
+      <div class="sc"><div class="sl">Wedding Spend</div><div class="sv r">${fmt(wSpent)}</div></div>
+      <div class="sc"><div class="sl">Engagement Spend</div><div class="sv o">${fmt(eSpent)}</div></div>
+    </div>
+    ${engGoal ? `<div class="card" style="border-color:var(--gold)">
+      <div class="card-t" style="color:var(--gold-d)">💍 Engagement Budget</div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div class="big-n serif" style="font-size:22px">${fmt(eSpent)}</div>
+        <div style="font-size:12px;color:var(--text3)">of ${fmt(engGoal)}</div>
+      </div>
+      <div class="pb"><div class="pf" style="width:${Math.min(100, (eSpent / engGoal) * 100).toFixed(0)}%;background:var(--gold)"></div></div>
+      <div class="pl"><span>${Math.min(100, (eSpent / engGoal) * 100).toFixed(0)}% used</span><span>${fmt(engGoal - eSpent)} remaining</span></div>
+    </div>` : ''}
+    ${goal ? `<div class="card">
+      <div class="card-t">Spending vs Budget</div>
+      <div class="pb" style="margin-top:4px"><div class="pf" style="width:${spendPct.toFixed(0)}%;background:var(--red)"></div></div>
+      <div class="pl" style="margin-top:4px"><span style="color:var(--red)">${fmt(totalSpent)} spent</span><span>${fmt(goal - totalSpent)} remaining</span></div>
+    </div>` : ''}
+    ${tasksTotal ? `<div class="card" style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">✅</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500">${tasksDone} of ${tasksTotal} tasks done</div>
+        <div class="pb" style="margin:6px 0 0"><div class="pf" style="width:${((tasksDone / tasksTotal) * 100).toFixed(0)}%;background:var(--green)"></div></div>
+      </div>
+      <button class="btn-sm sec" onclick="goTab('tasks')">View</button>
+    </div>` : ''}
+    <div class="card"><div class="card-t">Savings vs Spending (Cumulative)</div>${lineLabels.length>1?`<div class="chart-wrap h200"><canvas id="line-chart"></canvas></div>`:`<div class="chart-empty">Add savings &amp; expenses to see the trend line</div>`}</div>
+    <div class="card"><div class="card-t">Expense by Category</div>${pieData.length?`<div class="chart-wrap h200"><canvas id="pie-chart"></canvas></div>`:`<div class="chart-empty">Add expenses to see category breakdown</div>`}</div>
+    <div class="card"><div class="card-t">Savings by Source</div>${srcData.length?`<div class="chart-wrap h180"><canvas id="src-chart"></canvas></div>`:`<div class="chart-empty">Add savings with a source (MF, FD, Jupiter…)</div>`}</div>
+    <div class="card"><div class="card-t">Monthly Savings</div>${barData.length?`<div class="chart-wrap h160"><canvas id="bar-chart"></canvas></div>`:`<div class="chart-empty">Add monthly savings to see the bar chart</div>`}</div>
+    <div class="card"><div class="card-t">Wedding vs Engagement Spend</div>${(wSpent+eSpent>0)?`<div class="chart-wrap" style="height:90px"><canvas id="evt-chart"></canvas></div>`:`<div class="chart-empty">Add expenses tagged to Wedding or Engagement</div>`}</div>
+    ${recent.length ? `<div class="card"><div class="card-t">Recent Activity</div>${recentHTML}</div>` : ''}
+    <div class="card" style="text-align:center;padding:14px">
+      <div style="font-size:24px">💒</div>
+      <div class="serif" style="font-size:15px;margin-top:5px;color:var(--gold)">${wd.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">${daysLeft(wd)} days · Engagement ${ed.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} (~${daysLeft(ed)} days)</div>
+    </div>`;
+
+  requestAnimationFrame(() => {
+    if (lineLabels.length > 1) renderLineChart('line-chart', lineLabels, lineDs);
+    if (pieData.length)  renderPieChart('pie-chart',  pieLabels,  pieData,  pieColors);
+    if (srcData.length > 1) renderPieChart('src-chart', srcLabels, srcData, srcColors);
+    if (barData.length)  renderBarChart('bar-chart',  barLabels,  barData);
+    if (wSpent + eSpent > 0) renderHBarChart('evt-chart', evtLabels, evtData, evtColors);
+  });
+}
+
+// ── Money Tab ──────────────────────────────────────────
+let mTab='savings', mEvent='all', mCatF='all';
+
+function renderMoney() {
+  const evPills=`<div class="pills">${['all','wedding','engagement'].map(e=>`<div class="pill ${mEvent===e?'active':''}" onclick="setMEv('${e}')">${e==='all'?'All':e==='wedding'?'💒 Wedding':'💍 Engagement'}</div>`).join('')}</div>`;
+  const typePills=`<div class="pills"><div class="pill ${mTab==='savings'?'active':''}" onclick="setMTab('savings')">💰 Savings</div><div class="pill ${mTab==='expenses'?'active':''}" onclick="setMTab('expenses')">🧾 Expenses</div></div>`;
+  let content='';
+
+  if(mTab==='savings'){
+    const list=[...S.savings].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const total=list.reduce((a,x)=>a+x.amount,0);
+    const items=list.map(s=>{
+      const src=SAVINGS_SOURCES.find(x=>x.id===(s.source||'savings'))||SAVINGS_SOURCES[3];
+      return `<div class="li">
+      <div class="li-icon" style="background:var(--green-l)">${src.emoji}</div>
+      <div class="li-info"><div class="li-title">${s.month||fmtDate(s.date)}</div><div class="li-sub">${src.name}${s.note?' · '+s.note:''} · ${fmtDate(s.date)}</div></div>
+      <div class="li-right"><div class="li-amt g">+${fmt(s.amount)}</div><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></div>
+    </div>`;}).join('');
+    content=`<div class="sc" style="margin-bottom:10px;text-align:center"><div class="sl">Total Saved</div><div class="sv g" style="font-size:24px">${fmt(total)}</div></div>
+    <div class="card"><div class="card-t">Savings (${list.length})</div>${items||'<div class="empty"><div class="empty-ic">🌱</div>No savings yet. Tap + to add.</div>'}</div>`;
+  } else {
+    let expenses=S.expenses;
+    if(mEvent!=='all') expenses=expenses.filter(e=>mEvent==='engagement'?e.event==='engagement':e.event!=='engagement');
+    if(mCatF!=='all') expenses=expenses.filter(e=>e.category===mCatF);
+    const sorted=[...expenses].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const total=sorted.reduce((a,x)=>a+x.amount,0);
+    const catTotals={};
+    S.expenses.forEach(e=>{catTotals[e.category]=(catTotals[e.category]||0)+e.amount;});
+    const catPills=`<div class="pills"><div class="pill ${mCatF==='all'?'active':''}" onclick="setMCat('all')">All</div>${allCats().filter(c=>catTotals[c.id]).map(c=>`<div class="pill ${mCatF===c.id?'active':''}" onclick="setMCat('${c.id}')">${c.emoji} ${c.name}</div>`).join('')}</div>`;
+    const items=sorted.map(e=>{
+      const cat=getCat(e.category);
+      return `<div class="li">
+        <div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div>
+        <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · Engagement':''} · ${fmtDate(e.date)}</div></div>
+        <div class="li-right"><div class="li-amt r">-${fmt(e.amount)}</div><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></div>
+      </div>`;
+    }).join('');
+    content=`${catPills}<div class="card"><div class="card-t">Expenses · ${fmt(total)}</div>${items||'<div class="empty"><div class="empty-ic">🧾</div>No expenses yet. Tap + to add.</div>'}</div>`;
+  }
+  document.getElementById('pg-money').innerHTML=evPills+typePills+content;
+}
+function setMTab(t){mTab=t;renderMoney();}
+function setMEv(e){mEvent=e;renderMoney();}
+function setMCat(f){mCatF=f;renderMoney();}
+
+// ── Tasks Tab ──────────────────────────────────────────
+let taskFilter='all'; // all | wedding | engagement | done
+
+function renderTasks() {
+  const fPills=`<div class="pills">${['all','wedding','engagement','done'].map(f=>`<div class="pill ${taskFilter===f?'active':''}" onclick="setTaskF('${f}')">${f==='done'?'✅ Done':f==='all'?'All':f==='wedding'?'💒 Wedding':'💍 Engagement'}</div>`).join('')}</div>`;
+  let tasks=S.tasks;
+  if(taskFilter==='done') tasks=tasks.filter(t=>t.done);
+  else if(taskFilter!=='all') tasks=tasks.filter(t=>t.event===taskFilter&&!t.done);
+  else tasks=tasks.filter(t=>!t.done);
+
+  const pending=S.tasks.filter(t=>!t.done).length;
+  const done=S.tasks.filter(t=>t.done).length;
+
+  const items=tasks.map(t=>`<div class="task-item">
+    <div class="task-cb ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+    <div class="task-info">
+      <div class="task-title ${t.done?'done':''}">${t.title}</div>
+      <div class="task-meta">
+        <span>${t.category}</span>
+        <span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span>
+        ${t.dueDate?`<span>📅 ${fmtDate(t.dueDate)}</span>`:''}
+      </div>
+    </div>
+    <button class="btn-ic" onclick="delTask('${t.id}')">✕</button>
+  </div>`).join('');
+
+  document.getElementById('pg-tasks').innerHTML=`
+    <div class="sg">
+      <div class="sc"><div class="sl">Remaining</div><div class="sv r">${pending}</div></div>
+      <div class="sc"><div class="sl">Completed</div><div class="sv g">${done}</div></div>
+    </div>
+    ${fPills}
+    <div class="card">
+      <div class="card-t">${taskFilter==='done'?'Completed':'Pending'} Tasks (${tasks.length})</div>
+      ${items||'<div class="empty"><div class="empty-ic">🎉</div>All done! Tap + to add more.</div>'}
+    </div>`;
+}
+function setTaskF(f){taskFilter=f;renderTasks();}
+async function toggleTask(id){
+  const t=S.tasks.find(t=>t.id===id); if(!t) return;
+  t.done=!t.done; await saveS(); renderTasks();
+  if(t.done) showToast('✅ Task marked complete!');
+}
+async function delTask(id){
+  if(!confirm('Delete this task?')) return;
+  S.tasks=S.tasks.filter(t=>t.id!==id); await saveS(); renderTasks();
+}
+
+// ── Vendors Tab ────────────────────────────────────────
+function renderVendors() {
+  const totalCommitted=S.vendors.reduce((a,v)=>a+(v.totalAmount||0),0);
+  const totalPaid=S.vendors.reduce((a,v)=>a+(v.paidAmount||0),0);
+
+  const cards=S.vendors.map(v=>{
+    const cat=getCat(v.category);
+    const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
+    return `<div class="vendor-card">
+      <div class="vendor-top">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="font-size:18px">${cat.emoji}</div>
+            <div><div class="vendor-name">${v.name}</div><div class="vendor-cat">${cat.name}</div></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <span class="badge ${st.cls}" style="cursor:pointer" onclick="cycleVendorStatus('${v.id}')">${st.label}</span>
+          <button class="btn-ic" onclick="delVendor('${v.id}')">✕</button>
+        </div>
+      </div>
+      ${v.notes?`<div style="font-size:12px;color:var(--text3);margin-top:8px">${v.notes}</div>`:''}
+      <div class="vendor-bottom">
+        <div class="vendor-amt">
+          <span style="color:var(--text3);font-size:12px">Total: </span><strong>${fmt(v.totalAmount||0)}</strong>
+          ${v.paidAmount?` · <span style="color:var(--green);font-size:12px">Paid: ${fmt(v.paidAmount)}</span>`:''}
+        </div>
+        <div class="vendor-actions">
+          ${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')">📞 Call</button>`:''}
+          <button class="btn-sm sec" onclick="editVendor('${v.id}')">Edit</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('pg-vendors').innerHTML=`
+    <div class="sg">
+      <div class="sc"><div class="sl">Committed</div><div class="sv o">${fmt(totalCommitted)}</div></div>
+      <div class="sc"><div class="sl">Paid Out</div><div class="sv g">${fmt(totalPaid)}</div></div>
+    </div>
+    ${cards||'<div class="empty"><div class="empty-ic">🤝</div>No vendors yet.<br>Tap + to add your first vendor.</div>'}`;
+}
+
+function callVendor(phone){
+  showToast('📞 '+phone);
+  try{window.open('tel:'+phone);}catch(e){}
+}
+async function cycleVendorStatus(id){
+  const v=S.vendors.find(v=>v.id===id); if(!v) return;
+  const order=VENDOR_STATUSES.map(s=>s.id);
+  v.status=order[(order.indexOf(v.status)+1)%order.length];
+  await saveS(); renderVendors(); showToast('Status updated: '+VENDOR_STATUSES.find(s=>s.id===v.status).label);
+}
+async function delVendor(id){
+  if(!confirm('Delete this vendor?')) return;
+  S.vendors=S.vendors.filter(v=>v.id!==id); await saveS(); renderVendors();
+}
+function editVendor(id){openVendorModal(id);}
+
+// ── Settings Tab ───────────────────────────────────────
+function renderSettings(){
+  const sheetSet=!!S.sheetsUrl;
+  const appsScript=`function doPost(e){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var raw=e.parameter.data;
+  if(!raw) return ContentService.createTextOutput('no data');
+  var data=JSON.parse(decodeURIComponent(raw));
+  var s=ss.getSheetByName('Savings')||ss.insertSheet('Savings');
+  s.clearContents();
+  s.appendRow(['Month','Source','Amount','Note','Date']);
+  (data.savings||[]).forEach(function(r){s.appendRow([r.month,r.source||'',r.amount,r.note||'',r.date]);});
+  var ex=ss.getSheetByName('Expenses')||ss.insertSheet('Expenses');
+  ex.clearContents();
+  ex.appendRow(['Category','Amount','Description','Event','Date']);
+  (data.expenses||[]).forEach(function(r){ex.appendRow([r.category,r.amount,r.description||'',r.event||'wedding',r.date]);});
+  return ContentService.createTextOutput('ok');
+}
+function doGet(e){return doPost(e);
+}`;
+
+  const catChips=allCats().map(c=>`<div class="cat-chip">${c.emoji} ${c.name}${c.custom?`<span class="del" onclick="deleteCat('${c.id}')">✕</span>`:''}</div>`).join('');
+
+  document.getElementById('pg-settings').innerHTML=`
+    <div class="card">
+      <div class="card-t">Theme</div>
+      <div class="set-row" style="border:none;padding:4px 0">
+        <div class="set-info"><div class="set-t">Appearance</div><div class="set-d">Currently: ${S.theme==='auto'?'System default':S.theme==='dark'?'Dark mode':'Light mode'}</div></div>
+        <div class="theme-toggle">
+          <button class="theme-opt ${S.theme==='auto'?'active':''}" onclick="setTheme('auto')">Auto</button>
+          <button class="theme-opt ${S.theme==='light'?'active':''}" onclick="setTheme('light')">☀️</button>
+          <button class="theme-opt ${S.theme==='dark'?'active':''}" onclick="setTheme('dark')">🌙</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">Event Dates</div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">💒 Wedding Date</div><div class="set-d">${getWeddingDate().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} · ${daysLeft(getWeddingDate())} days left</div></div>
+        <button class="btn-sm" onclick="openDateModal('wedding')">Edit</button>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">💍 Engagement Date</div><div class="set-d">${getEngagementDate().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} · ${daysLeft(getEngagementDate())} days left</div></div>
+        <button class="btn-sm" onclick="openDateModal('engagement')">Edit</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">Budget Goals</div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Wedding Budget</div><div class="set-d">${S.goal?fmt(S.goal):'Not set'}</div></div>
+        <button class="btn-sm" onclick="openGoalModal()">${S.goal?'Edit':'Set'}</button>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Engagement Budget</div><div class="set-d">${S.engGoal?fmt(S.engGoal):'Not set'}</div></div>
+        <button class="btn-sm" onclick="openEngGoalModal()">${S.engGoal?'Edit':'Set'}</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-t">Custom Categories</div>
+      <div class="cat-chips">${catChips}</div>
+      <button class="btn sec" style="margin-top:12px" onclick="openAddCatModal()">+ Add Custom Category</button>
+    </div>
+
+    <div class="card">
+      <div class="card-t">Export Data</div>
+      <div class="exp-grid">
+        <div class="exp-card" onclick="exportCSV('savings')"><div style="font-size:24px">💰</div><div style="font-size:13px;font-weight:500;margin-top:4px">Savings CSV</div><div style="font-size:11px;color:var(--text3)">${S.savings.length} entries</div></div>
+        <div class="exp-card" onclick="exportCSV('expenses')"><div style="font-size:24px">🧾</div><div style="font-size:13px;font-weight:500;margin-top:4px">Expenses CSV</div><div style="font-size:11px;color:var(--text3)">${S.expenses.length} entries</div></div>
+        <div class="exp-card" onclick="exportCSV('vendors')"><div style="font-size:24px">🤝</div><div style="font-size:13px;font-weight:500;margin-top:4px">Vendors CSV</div><div style="font-size:11px;color:var(--text3)">${S.vendors.length} vendors</div></div>
+        <div class="exp-card" onclick="exportCSV('tasks')"><div style="font-size:24px">✅</div><div style="font-size:13px;font-weight:500;margin-top:4px">Tasks CSV</div><div style="font-size:11px;color:var(--text3)">${S.tasks.length} tasks</div></div>
+        <div class="exp-card" onclick="exportCSV('all')"><div style="font-size:24px">📊</div><div style="font-size:13px;font-weight:500;margin-top:4px">All Data CSV</div><div style="font-size:11px;color:var(--text3)">Combined</div></div>
+        <div class="exp-card" onclick="exportJSON()"><div style="font-size:24px">📦</div><div style="font-size:13px;font-weight:500;margin-top:4px">JSON Backup</div><div style="font-size:11px;color:var(--text3)">Full backup</div></div>
+        <div class="exp-card" onclick="document.getElementById('import-file').click()"><div style="font-size:24px">📥</div><div style="font-size:13px;font-weight:500;margin-top:4px">Import JSON</div><div style="font-size:11px;color:var(--text3)">Restore backup</div></div>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+
+    <div class="card">
+      <div class="card-t">Google Sheets Sync ☁️</div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Status</div><div class="set-d">${S.lastSync?'Last synced: '+fmtDate(S.lastSync):'Never synced'}</div></div>
+        <span class="badge ${sheetSet?'g':'gr'}">${sheetSet?'Connected':'Not Set'}</span>
+      </div>
+      ${sheetSet?`
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Sync Now</div></div>
+        <button class="btn-sm" onclick="syncToSheets()">Sync ☁️</button>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Update URL</div></div>
+        <button class="btn-sm sec" onclick="openSheetsModal()">Edit</button>
+      </div>`:`<button class="btn" style="margin-top:10px" onclick="openSheetsModal()">Connect Google Sheets →</button>`}
+    </div>
+
+    ${!sheetSet?`<div class="card">
+      <div class="card-t">Google Sheets Setup Guide</div>
+      <div class="step"><div class="step-n">1</div><div>Create a new Google Spreadsheet</div></div>
+      <div class="step"><div class="step-n">2</div><div>Go to <strong>Extensions → Apps Script</strong></div></div>
+      <div class="step"><div class="step-n">3</div><div>Paste this code and save:</div></div>
+      <div class="code-b">${appsScript.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div class="step"><div class="step-n">4</div><div><strong>Deploy → New Deployment → Web App</strong> → Set access to <strong>Anyone</strong> → Deploy</div></div>
+      <div class="step"><div class="step-n">5</div><div>Copy the Web App URL and paste it in "Connect Google Sheets"</div></div>
+    </div>`:''}`;
+}
+
+function openDateModal(type){
+  const isW = type==='wedding';
+  const cur  = isW ? S.weddingDate||'2026-12-02' : S.engagementDate||'2026-07-01';
+  openM(`
+    <div class="m-title serif">${isW?'💒 Wedding Date':'💍 Engagement Date'}</div>
+    <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="ev-date" value="${cur}"></div>
+    <button class="btn" onclick="saveEventDate('${type}')">Save Date</button>`);
+}
+async function saveEventDate(type){
+  const val=document.getElementById('ev-date').value;
+  if(!val){showToast('❌ Select a date');return;}
+  if(type==='wedding') S.weddingDate=val; else S.engagementDate=val;
+  await saveS(); closeM(); updateCDs(); renderSettings();
+  showToast('📅 Date updated!');
+}
+
+function setTheme(t){ S.theme=t; applyTheme(t); saveS(); renderSettings(); }
+async function deleteCat(id){
+  S.customCats=S.customCats.filter(c=>c.id!==id); await saveS(); renderSettings();
+  showToast('Category removed');
+}
+
+// ── Modals ─────────────────────────────────────────────
+function openM(html){ document.getElementById('mc').innerHTML=html; document.getElementById('modal').classList.add('open'); }
+function closeM(){ document.getElementById('modal').classList.remove('open'); }
+function mClickOut(e){ if(e.target.id==='modal') closeM(); }
+
+function openAddModal(){
+  openM(`
+    <div class="m-title serif">Add Entry</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+      <button class="btn" onclick="closeM();setTimeout(openSavingsModal,100)">💰 Add Savings</button>
+      <button class="btn" onclick="closeM();setTimeout(openExpenseModal,100)">🧾 Add Expense</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="btn sec" onclick="closeM();setTimeout(openTaskModal,100)">✅ Add Task</button>
+      <button class="btn sec" onclick="closeM();setTimeout(()=>openVendorModal(),100)">🤝 Add Vendor</button>
+    </div>`);
+}
+
+function openSavingsModal(){
+  const now=new Date(); const opts=[];
+  for(let y=2025;y<=2027;y++) for(let m=0;m<12;m++) opts.push(`<option value="${MONTHS[m]} ${y}">${MONTHS[m]} ${y}</option>`);
+  const srcOpts=SAVINGS_SOURCES.map(s=>`<option value="${s.id}">${s.emoji} ${s.name}</option>`).join('');
+  openM(`
+    <div class="m-title serif">Add Savings 💰</div>
+    <div class="fg"><label class="fl">Month</label><select class="fi" id="s-month">${opts.join('')}</select></div>
+    <div class="fg"><label class="fl">Saved In</label><select class="fi" id="s-src">${srcOpts}</select></div>
+    <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="s-amt" placeholder="e.g. 15000" inputmode="numeric"></div>
+    <div class="fg"><label class="fl">Note (optional)</label><input class="fi" type="text" id="s-note" placeholder="e.g. Salary savings"></div>
+    <button class="btn" onclick="addSaving()">Save Entry</button>`);
+  const sel=document.getElementById('s-month');
+  const def=`${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  for(let o of sel.options) if(o.value===def){o.selected=true;break;}
+}
+
+function openExpenseModal(){
+  const catOpts=allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  openM(`
+    <div class="m-title serif">Add Expense 🧾</div>
+    <div class="fg"><label class="fl">Category</label><select class="fi" id="e-cat">${catOpts}</select></div>
+    <div class="fg"><label class="fl">Event</label><select class="fi" id="e-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
+    <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="e-amt" placeholder="e.g. 50000" inputmode="numeric"></div>
+    <div class="fg"><label class="fl">Description (optional)</label><input class="fi" type="text" id="e-desc" placeholder="e.g. Venue booking advance"></div>
+    <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="e-date"></div>
+    <button class="btn" onclick="addExpense()">Add Expense</button>`);
+  document.getElementById('e-date').value=new Date().toISOString().split('T')[0];
+}
+
+function openGoalModal(){
+  openM(`
+    <div class="m-title serif">Wedding Budget 🎯</div>
+    <div class="fg"><label class="fl">Total Wedding Budget (₹)</label><input class="fi" type="number" id="g-amt" placeholder="e.g. 1500000" inputmode="numeric" value="${S.goal||''}"></div>
+    <button class="btn" onclick="setGoal()">Set Budget</button>`);
+}
+function openEngGoalModal(){
+  openM(`
+    <div class="m-title serif">Engagement Budget 💍</div>
+    <div class="fg"><label class="fl">Total Engagement Budget (₹)</label><input class="fi" type="number" id="eg-amt" placeholder="e.g. 200000" inputmode="numeric" value="${S.engGoal||''}"></div>
+    <button class="btn" onclick="setEngGoal()">Set Budget</button>`);
+}
+
+function openTaskModal(){
+  const catOpts=TASK_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  openM(`
+    <div class="m-title serif">Add Task ✅</div>
+    <div class="fg"><label class="fl">Task Name</label><input class="fi" type="text" id="t-title" placeholder="e.g. Book the banquet hall"></div>
+    <div class="fg"><label class="fl">Category</label><select class="fi" id="t-cat">${catOpts}</select></div>
+    <div class="fg"><label class="fl">Event</label><select class="fi" id="t-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
+    <div class="fg"><label class="fl">Due Date (optional)</label><input class="fi" type="date" id="t-due"></div>
+    <button class="btn" onclick="addTask()">Add Task</button>`);
+}
+
+function openVendorModal(editId){
+  const cats=allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  const sts=VENDOR_STATUSES.map(s=>`<option value="${s.id}">${s.label}</option>`).join('');
+  const v=editId?S.vendors.find(v=>v.id===editId):null;
+  openM(`
+    <div class="m-title serif">${v?'Edit Vendor':'Add Vendor'} 🤝</div>
+    <div class="fg"><label class="fl">Vendor Name</label><input class="fi" type="text" id="v-name" placeholder="e.g. Royal Caterers" value="${v?v.name:''}"></div>
+    <div class="fg"><label class="fl">Category</label><select class="fi" id="v-cat">${cats}</select></div>
+    <div class="fg"><label class="fl">Phone (optional)</label><input class="fi" type="tel" id="v-phone" placeholder="+91 98765 43210" inputmode="tel" value="${v?v.phone||'':''}"></div>
+    <div class="fg"><label class="fl">Total Amount (₹)</label><input class="fi" type="number" id="v-total" placeholder="e.g. 200000" inputmode="numeric" value="${v?v.totalAmount||'':''}"></div>
+    <div class="fg"><label class="fl">Amount Paid (₹)</label><input class="fi" type="number" id="v-paid" placeholder="0" inputmode="numeric" value="${v?v.paidAmount||'':''}"></div>
+    <div class="fg"><label class="fl">Status</label><select class="fi" id="v-status">${sts}</select></div>
+    <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" type="text" id="v-notes" placeholder="Any details about this vendor" value="${v?v.notes||'':''}"></div>
+    <button class="btn" onclick="${v?`saveVendor('${editId}')`:'addVendor()'}">${v?'Save Changes':'Add Vendor'}</button>
+    ${v?`<button class="btn sec" onclick="delVendor('${editId}');closeM()">Delete Vendor</button>`:''}`);
+  if(v){
+    document.getElementById('v-cat').value=v.category;
+    document.getElementById('v-status').value=v.status;
+  }
+}
+
+function openSheetsModal(){
+  openM(`
+    <div class="m-title serif">Google Sheets ☁️</div>
+    <div class="fg"><label class="fl">Apps Script Web App URL</label><input class="fi" type="url" id="sh-url" placeholder="https://script.google.com/macros/s/..." value="${S.sheetsUrl||''}"></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Follow the setup guide in Settings tab to get this URL.</div>
+    <button class="btn" onclick="saveSheetsUrl()">Save & Sync Now</button>
+    ${S.sheetsUrl?`<button class="btn sec" onclick="removeSheetsUrl()">Remove Integration</button>`:''}`);
+}
+
+let newCatColor=SWATCH_COLORS[0], newCatEmoji=EMOJI_OPTS[0];
+function openAddCatModal(){
+  newCatColor=SWATCH_COLORS[0]; newCatEmoji=EMOJI_OPTS[0];
+  const swatches=SWATCH_COLORS.map(c=>`<div class="swatch ${c===newCatColor?'selected':''}" style="background:${c}" onclick="selectSwatch('${c}');event.stopPropagation()" data-color="${c}"></div>`).join('');
+  const emojis=EMOJI_OPTS.map(e=>`<div class="emoji-opt ${e===newCatEmoji?'selected':''}" onclick="selectEmoji('${e}');event.stopPropagation()" data-emoji="${e}">${e}</div>`).join('');
+  openM(`
+    <div class="m-title serif">Add Custom Category</div>
+    <div class="fg"><label class="fl">Category Name</label><input class="fi" type="text" id="nc-name" placeholder="e.g. Gifts & Favors"></div>
+    <div class="fg"><label class="fl">Choose Color</label><div class="color-swatches" id="swatch-wrap">${swatches}</div></div>
+    <div class="fg"><label class="fl">Choose Emoji</label><div class="emoji-row" id="emoji-wrap">${emojis}</div></div>
+    <button class="btn" onclick="addCustomCat()">Add Category</button>`);
+}
+
+function selectSwatch(color){
+  newCatColor=color;
+  document.querySelectorAll('.swatch').forEach(s=>s.classList.toggle('selected',s.dataset.color===color));
+}
+function selectEmoji(emoji){
+  newCatEmoji=emoji;
+  document.querySelectorAll('.emoji-opt').forEach(e=>e.classList.toggle('selected',e.dataset.emoji===emoji));
+}
+
+// ── CRUD ───────────────────────────────────────────────
+async function addSaving(){
+  const month=document.getElementById('s-month').value;
+  const source=document.getElementById('s-src').value;
+  const amount=parseFloat(document.getElementById('s-amt').value);
+  const note=document.getElementById('s-note').value.trim();
+  if(!amount||amount<=0){showToast('❌ Enter a valid amount');return;}
+  S.savings.push({id:uid(),date:new Date().toISOString(),month,source,amount,note});
+  await saveS(); closeM(); renderTab();
+  showToast('✅ Savings added!');
+  if(S.sheetsUrl) syncToSheets(true);
+}
+async function addExpense(){
+  const category=document.getElementById('e-cat').value;
+  const event=document.getElementById('e-event').value;
+  const amount=parseFloat(document.getElementById('e-amt').value);
+  const description=document.getElementById('e-desc').value.trim();
+  const date=document.getElementById('e-date').value||new Date().toISOString().split('T')[0];
+  if(!amount||amount<=0){showToast('❌ Enter a valid amount');return;}
+  S.expenses.push({id:uid(),date,category,event,amount,description});
+  await saveS(); closeM(); renderTab();
+  showToast('✅ Expense added!');
+  if(S.sheetsUrl) syncToSheets(true);
+}
+async function setGoal(){
+  const a=parseFloat(document.getElementById('g-amt').value);
+  if(!a||a<=0){showToast('❌ Enter a valid amount');return;}
+  S.goal=a; await saveS(); closeM(); renderTab(); showToast('🎯 Wedding budget set!');
+}
+async function setEngGoal(){
+  const a=parseFloat(document.getElementById('eg-amt').value);
+  if(!a||a<=0){showToast('❌ Enter a valid amount');return;}
+  S.engGoal=a; await saveS(); closeM(); renderTab(); showToast('💍 Engagement budget set!');
+}
+async function addTask(){
+  const title=document.getElementById('t-title').value.trim();
+  const category=document.getElementById('t-cat').value;
+  const event=document.getElementById('t-event').value;
+  const dueDate=document.getElementById('t-due').value||'';
+  if(!title){showToast('❌ Enter a task name');return;}
+  S.tasks.push({id:uid(),title,category,event,dueDate,done:false});
+  await saveS(); closeM(); renderTab(); showToast('✅ Task added!');
+}
+async function addVendor(){
+  const name=document.getElementById('v-name').value.trim();
+  const category=document.getElementById('v-cat').value;
+  const phone=document.getElementById('v-phone').value.trim();
+  const totalAmount=parseFloat(document.getElementById('v-total').value)||0;
+  const paidAmount=parseFloat(document.getElementById('v-paid').value)||0;
+  const status=document.getElementById('v-status').value;
+  const notes=document.getElementById('v-notes').value.trim();
+  if(!name){showToast('❌ Enter vendor name');return;}
+  S.vendors.push({id:uid(),name,category,phone,totalAmount,paidAmount,status,notes});
+  await saveS(); closeM(); renderTab(); showToast('🤝 Vendor added!');
+}
+async function saveVendor(id){
+  const v=S.vendors.find(v=>v.id===id); if(!v) return;
+  v.name=document.getElementById('v-name').value.trim();
+  v.category=document.getElementById('v-cat').value;
+  v.phone=document.getElementById('v-phone').value.trim();
+  v.totalAmount=parseFloat(document.getElementById('v-total').value)||0;
+  v.paidAmount=parseFloat(document.getElementById('v-paid').value)||0;
+  v.status=document.getElementById('v-status').value;
+  v.notes=document.getElementById('v-notes').value.trim();
+  await saveS(); closeM(); renderTab(); showToast('✅ Vendor updated!');
+}
+async function addCustomCat(){
+  const name=document.getElementById('nc-name').value.trim();
+  if(!name){showToast('❌ Enter a category name');return;}
+  const id='custom_'+uid();
+  S.customCats.push({id,name,emoji:newCatEmoji,color:newCatColor,custom:true});
+  await saveS(); closeM(); renderSettings(); showToast('✅ Category added!');
+}
+async function saveSheetsUrl(){
+  const url=document.getElementById('sh-url').value.trim();
+  if(!url||!url.startsWith('https://')){showToast('❌ Enter a valid URL');return;}
+  S.sheetsUrl=url; await saveS(); closeM(); renderSettings();
+  await syncToSheets();
+}
+async function importJSON(evt){
+  const file = evt.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e){
+    try {
+      const imported = JSON.parse(e.target.result);
+      if(!imported.savings && !imported.expenses) { showToast('❌ Invalid backup file'); return; }
+      if(!confirm(`Import ${(imported.savings||[]).length} savings + ${(imported.expenses||[]).length} expenses? Current data will be replaced.`)) return;
+      S = {...S, ...imported};
+      await saveS(); renderTab();
+      showToast('✅ Data imported successfully!');
+    } catch(err) { showToast('❌ Could not read file'); }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+async function removeSheetsUrl(){
+  S.sheetsUrl=''; S.lastSync=null; await saveS(); closeM(); renderSettings();
+  showToast('Google Sheets disconnected');
+}
+async function delSaving(id){
+  if(!confirm('Delete this savings entry?')) return;
+  S.savings=S.savings.filter(s=>s.id!==id); await saveS(); renderTab();
+}
+async function delExpense(id){
+  if(!confirm('Delete this expense?')) return;
+  S.expenses=S.expenses.filter(e=>e.id!==id); await saveS(); renderTab();
+}
+
+// ── Init ───────────────────────────────────────────────
+async function init(){
+  await loadS();
+
+  // Add default tasks if none
+  if(!S.tasks.length){
+    S.tasks=DEFAULT_TASKS.map(t=>({...t,id:uid(),date:new Date().toISOString()}));
+    await saveS();
+  }
+
+  applyTheme(S.theme);
+  updateCDs(); setInterval(updateCDs,60000);
+  updateSyncIcon();
+  renderTab();
+}
+init();
+</script>
+</body>
+</html>
