@@ -297,7 +297,19 @@ function allCats() { return [...DEFAULT_CATS,...S.customCats]; }
 function getCat(id) { return allCats().find(c=>c.id===id)||DEFAULT_CATS[DEFAULT_CATS.length-1]; }
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function daysLeft(d) { return Math.max(0,Math.ceil((d-new Date())/86400000)); }
-function fmtDate(d) { return new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}); }
+function fmtDate(d) {
+  if(!d) return '';
+  const dt=new Date(d);
+  if(isNaN(dt.getTime())) return '';
+  return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+}
+function cleanMonth(m) {
+  if(!m) return '';
+  if(/^[A-Za-z]+ \d{4}$/.test(String(m).trim())) return String(m).trim();
+  const dt=new Date(m);
+  if(!isNaN(dt.getTime())) return MONTHS[dt.getMonth()]+' '+dt.getFullYear();
+  return String(m);
+}
 function fmt(n) { return '₹'+Math.round(n).toLocaleString('en-IN'); }
 
 function showToast(msg,ms=2500) {
@@ -390,7 +402,7 @@ async function pullFromSheets(silent=false) {
     if(!data || (!data.savings && !data.expenses)) throw new Error('empty');
 
     // Merge — sheet is source of truth
-    if(data.savings)  S.savings  = data.savings;
+    if(data.savings)  S.savings  = data.savings.map(s=>({...s, month: cleanMonth(s.month)}));
     if(data.expenses) S.expenses = data.expenses;
     if(data.vendors)  S.vendors  = data.vendors;
     if(data.tasks)    S.tasks    = data.tasks;
@@ -553,7 +565,7 @@ function renderHome() {
 
   // ② Monthly savings — bar
   const mMap = {};
-  S.savings.forEach(s => { const m = s.month || fmtDate(s.date); mMap[m] = (mMap[m] || 0) + s.amount; });
+  S.savings.forEach(s => { const m = cleanMonth(s.month) || fmtDate(s.date); mMap[m] = (mMap[m] || 0) + s.amount; });
   const mE = Object.entries(mMap).slice(-8);
   const barLabels = mE.map(([k]) => k.split(' ')[0].slice(0, 3));
   const barData   = mE.map(([, v]) => v);
@@ -594,7 +606,7 @@ function renderHome() {
   const recentHTML = recent.map(item => {
     if (item._type === 's') {
       const src = SAVINGS_SOURCES.find(x => x.id === (item.source || 'savings'));
-      return `<div class="li"><div class="li-icon" style="background:var(--green-l)">💰</div><div class="li-info"><div class="li-title">${item.month || 'Savings'}</div><div class="li-sub">${src ? src.emoji + ' ' + src.name : 'Savings'} · ${fmtDate(item.date)}</div></div><div class="li-amt g">+${fmt(item.amount)}</div></div>`;
+      return `<div class="li"><div class="li-icon" style="background:var(--green-l)">💰</div><div class="li-info"><div class="li-title">${cleanMonth(item.month) || 'Savings'}</div><div class="li-sub">${src ? src.emoji + ' ' + src.name : 'Savings'} · ${fmtDate(item.date)}</div></div><div class="li-amt g">+${fmt(item.amount)}</div></div>`;
     }
     const cat = getCat(item.category);
     return `<div class="li"><div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div><div class="li-info"><div class="li-title">${item.description || cat.name}</div><div class="li-sub">${cat.name}${item.event === 'engagement' ? ' · Engagement' : ''} · ${fmtDate(item.date)}</div></div><div class="li-amt r">-${fmt(item.amount)}</div></div>`;
@@ -681,7 +693,7 @@ function renderMoney() {
       const src=SAVINGS_SOURCES.find(x=>x.id===(s.source||'savings'))||SAVINGS_SOURCES[3];
       return `<div class="li">
       <div class="li-icon" style="background:var(--green-l)">${src.emoji}</div>
-      <div class="li-info"><div class="li-title">${s.month||fmtDate(s.date)}</div><div class="li-sub">${src.name}${s.note?' · '+s.note:''} · ${fmtDate(s.date)}</div></div>
+      <div class="li-info"><div class="li-title">${cleanMonth(s.month)||fmtDate(s.date)}</div><div class="li-sub">${src.name}${s.note?' · '+s.note:''} · ${fmtDate(s.date)}</div></div>
       <div class="li-right"><div class="li-amt g">+${fmt(s.amount)}</div><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></div>
     </div>`;}).join('');
     content=`<div class="sc" style="margin-bottom:10px;text-align:center"><div class="sl">Total Saved</div><div class="sv g" style="font-size:24px">${fmt(total)}</div></div>
