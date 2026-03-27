@@ -77,6 +77,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .pills{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;}
 .pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--bor);background:var(--sur2);color:var(--text2);white-space:nowrap;user-select:none;}
 .pill.active{background:var(--gold-l);color:var(--gold-d);border-color:var(--gold);}
+/* Toggle switch */
+.tog-wrap{display:flex;align-items:center;gap:0;margin-bottom:12px;background:var(--sur2);border-radius:20px;padding:3px;border:0.5px solid var(--bor);}
+.tog-opt{flex:1;text-align:center;padding:6px 10px;border-radius:16px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text3);transition:all 0.18s;user-select:none;white-space:nowrap;}
+.tog-opt.active{background:var(--sur);color:var(--gold);box-shadow:0 1px 6px rgba(124,58,237,0.12);}
 /* List items */
 .li{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bor);}
 .li:last-child{border-bottom:none;}
@@ -375,6 +379,33 @@ async function syncToSheets(silent=false) {
 }
 async function manualSync() { if(!S.sheetsUrl){goTab('settings');return;} await syncToSheets(); }
 
+async function pullFromSheets(silent=false) {
+  if(!S.sheetsUrl){showToast('⚙️ Set up Sheets URL in Settings');goTab('settings');return;}
+  if(!silent) showToast('☁️ Pulling data from Sheets...');
+  try {
+    const url = S.sheetsUrl + '?action=pull';
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('fetch failed');
+    const data = await resp.json();
+    if(!data || (!data.savings && !data.expenses)) throw new Error('empty');
+
+    // Merge — sheet is source of truth
+    if(data.savings)  S.savings  = data.savings;
+    if(data.expenses) S.expenses = data.expenses;
+    if(data.vendors)  S.vendors  = data.vendors;
+    if(data.tasks)    S.tasks    = data.tasks;
+    if(data.goal)     S.goal     = data.goal;
+    if(data.engGoal)  S.engGoal  = data.engGoal;
+
+    await saveS();
+    if(!silent) showToast('✅ Data pulled from Google Sheets!');
+    renderTab();
+    if(curTab==='settings') renderSettings();
+  } catch(e) {
+    if(!silent) showToast('❌ Pull failed. Check Apps Script code.');
+  }
+}
+
 // ── Export ─────────────────────────────────────────────
 function exportCSV(type) {
   let csv='',fn='';
@@ -632,8 +663,15 @@ function renderHome() {
 let mTab='savings', mEvent='all', mCatF='all';
 
 function renderMoney() {
-  const evPills=`<div class="pills">${['all','wedding','engagement'].map(e=>`<div class="pill ${mEvent===e?'active':''}" onclick="setMEv('${e}')">${e==='all'?'All':e==='wedding'?'💒 Wedding':'💍 Engagement'}</div>`).join('')}</div>`;
-  const typePills=`<div class="pills"><div class="pill ${mTab==='savings'?'active':''}" onclick="setMTab('savings')">💰 Savings</div><div class="pill ${mTab==='expenses'?'active':''}" onclick="setMTab('expenses')">🧾 Expenses</div></div>`;
+  const evToggle=`<div class="tog-wrap">
+    <div class="tog-opt ${mEvent==='all'?'active':''}" onclick="setMEv('all')">All</div>
+    <div class="tog-opt ${mEvent==='wedding'?'active':''}" onclick="setMEv('wedding')">💒 Wedding</div>
+    <div class="tog-opt ${mEvent==='engagement'?'active':''}" onclick="setMEv('engagement')">💍 Engagement</div>
+  </div>`;
+  const typePills=`<div class="tog-wrap">
+    <div class="tog-opt ${mTab==='savings'?'active':''}" onclick="setMTab('savings')">💰 Savings</div>
+    <div class="tog-opt ${mTab==='expenses'?'active':''}" onclick="setMTab('expenses')">🧾 Expenses</div>
+  </div>`;
   let content='';
 
   if(mTab==='savings'){
@@ -667,7 +705,7 @@ function renderMoney() {
     }).join('');
     content=`${catPills}<div class="card"><div class="card-t">Expenses · ${fmt(total)}</div>${items||'<div class="empty"><div class="empty-ic">🧾</div>No expenses yet. Tap + to add.</div>'}</div>`;
   }
-  document.getElementById('pg-money').innerHTML=evPills+typePills+content;
+  document.getElementById('pg-money').innerHTML=evToggle+typePills+content;
 }
 function setMTab(t){mTab=t;renderMoney();}
 function setMEv(e){mEvent=e;renderMoney();}
@@ -677,7 +715,12 @@ function setMCat(f){mCatF=f;renderMoney();}
 let taskFilter='all'; // all | wedding | engagement | done
 
 function renderTasks() {
-  const fPills=`<div class="pills">${['all','wedding','engagement','done'].map(f=>`<div class="pill ${taskFilter===f?'active':''}" onclick="setTaskF('${f}')">${f==='done'?'✅ Done':f==='all'?'All':f==='wedding'?'💒 Wedding':'💍 Engagement'}</div>`).join('')}</div>`;
+  const fToggle=`<div class="tog-wrap">
+    <div class="tog-opt ${taskFilter==='all'?'active':''}" onclick="setTaskF('all')">All</div>
+    <div class="tog-opt ${taskFilter==='wedding'?'active':''}" onclick="setTaskF('wedding')">💒 Wedding</div>
+    <div class="tog-opt ${taskFilter==='engagement'?'active':''}" onclick="setTaskF('engagement')">💍 Engagement</div>
+    <div class="tog-opt ${taskFilter==='done'?'active':''}" onclick="setTaskF('done')">✅ Done</div>
+  </div>`;
   let tasks=S.tasks;
   if(taskFilter==='done') tasks=tasks.filter(t=>t.done);
   else if(taskFilter!=='all') tasks=tasks.filter(t=>t.event===taskFilter&&!t.done);
@@ -704,7 +747,7 @@ function renderTasks() {
       <div class="sc"><div class="sl">Remaining</div><div class="sv r">${pending}</div></div>
       <div class="sc"><div class="sl">Completed</div><div class="sv g">${done}</div></div>
     </div>
-    ${fPills}
+    ${fToggle}
     <div class="card">
       <div class="card-t">${taskFilter==='done'?'Completed':'Pending'} Tasks (${tasks.length})</div>
       ${items||'<div class="empty"><div class="empty-ic">🎉</div>All done! Tap + to add more.</div>'}
@@ -811,7 +854,38 @@ function renderSettings(){
 
   return ContentService.createTextOutput('ok');
 }
-function doGet(e){return doPost(e);
+
+function doGet(e){
+  if(e.parameter.action==='pull'){
+    var ss=SpreadsheetApp.getActiveSpreadsheet();
+
+    function sheetToObjects(sheetName,keys){
+      var sh=ss.getSheetByName(sheetName);
+      if(!sh||sh.getLastRow()<2) return [];
+      var rows=sh.getRange(2,1,sh.getLastRow()-1,keys.length).getValues();
+      return rows.filter(function(r){return r[0]!=='';}).map(function(r){
+        var obj={};
+        keys.forEach(function(k,i){obj[k]=r[i]||'';});
+        return obj;
+      });
+    }
+
+    var savings=sheetToObjects('Savings',['month','source','amount','note','date']);
+    savings=savings.map(function(r){r.amount=parseFloat(r.amount)||0;r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
+
+    var expenses=sheetToObjects('Expenses',['category','amount','description','event','date']);
+    expenses=expenses.map(function(r){r.amount=parseFloat(r.amount)||0;r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
+
+    var vendors=sheetToObjects('Vendors',['name','category','phone','totalAmount','paidAmount','balance','status','notes']);
+    vendors=vendors.map(function(r){r.totalAmount=parseFloat(r.totalAmount)||0;r.paidAmount=parseFloat(r.paidAmount)||0;r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
+
+    var tasks=sheetToObjects('Tasks',['title','category','event','dueDate','done']);
+    tasks=tasks.map(function(r){r.done=(r.done==='Yes'||r.done===true);r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
+
+    var result=JSON.stringify({savings:savings,expenses:expenses,vendors:vendors,tasks:tasks});
+    return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput('ok');
 }`;
 
   const catChips=allCats().map(c=>`<div class="cat-chip">${c.emoji} ${c.name}${c.custom?`<span class="del" onclick="deleteCat('${c.id}')">✕</span>`:''}</div>`).join('');
@@ -881,8 +955,12 @@ function doGet(e){return doPost(e);
       </div>
       ${sheetSet?`
       <div class="set-row">
-        <div class="set-info"><div class="set-t">Sync Now</div></div>
-        <button class="btn-sm" onclick="syncToSheets()">Sync ☁️</button>
+        <div class="set-info"><div class="set-t">Push to Sheets ☁️</div><div class="set-d">App data → Sheet (overwrite)</div></div>
+        <button class="btn-sm" onclick="syncToSheets()">Push</button>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Pull from Sheets ⬇️</div><div class="set-d">Sheet data → App (overwrite)</div></div>
+        <button class="btn-sm" onclick="pullFromSheets()">Pull</button>
       </div>
       <div class="set-row">
         <div class="set-info"><div class="set-t">Update URL</div></div>
@@ -890,15 +968,21 @@ function doGet(e){return doPost(e);
       </div>`:`<button class="btn" style="margin-top:10px" onclick="openSheetsModal()">Connect Google Sheets →</button>`}
     </div>
 
-    ${!sheetSet?`<div class="card">
-      <div class="card-t">Google Sheets Setup Guide</div>
-      <div class="step"><div class="step-n">1</div><div>Create a new Google Spreadsheet</div></div>
-      <div class="step"><div class="step-n">2</div><div>Go to <strong>Extensions → Apps Script</strong></div></div>
-      <div class="step"><div class="step-n">3</div><div>Paste this code and save:</div></div>
-      <div class="code-b">${appsScript.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-      <div class="step"><div class="step-n">4</div><div><strong>Deploy → New Deployment → Web App</strong> → Set access to <strong>Anyone</strong> → Deploy</div></div>
-      <div class="step"><div class="step-n">5</div><div>Copy the Web App URL and paste it in "Connect Google Sheets"</div></div>
-    </div>`:''}`;
+    <div class="card">
+      <div class="card-t">Apps Script Code</div>
+      <div class="step"><div class="step-n">1</div><div>Google Sheet → <strong>Extensions → Apps Script</strong></div></div>
+      <div class="step"><div class="step-n">2</div><div>Pura code replace karke yeh paste karo:</div></div>
+      <div class="code-b" id="gas-code">${appsScript.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div class="step"><div class="step-n">3</div><div><strong>Deploy → Manage Deployments → Edit → New Version → Deploy</strong></div></div>
+      <button class="btn sec" style="margin-top:8px" onclick="copyGASCode()">📋 Copy Code</button>
+    </div>`;
+}
+
+function copyGASCode(){
+  const el=document.getElementById('gas-code');
+  if(!el) return;
+  const text=el.innerText||el.textContent;
+  navigator.clipboard.writeText(text).then(()=>showToast('✅ Code copied!')).catch(()=>showToast('❌ Copy failed — select manually'));
 }
 
 function openDateModal(type){
@@ -984,7 +1068,8 @@ function openEngGoalModal(){
 }
 
 function openTaskModal(){
-  const catOpts=TASK_CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  const catOpts = [...TASK_CATS, ...S.customCats.map(c=>c.name)]
+    .map(c=>`<option value="${c}">${c}</option>`).join('');
   openM(`
     <div class="m-title serif">Add Task ✅</div>
     <div class="fg"><label class="fl">Task Name</label><input class="fi" type="text" id="t-title" placeholder="e.g. Book the banquet hall"></div>
