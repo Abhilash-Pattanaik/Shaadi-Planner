@@ -711,7 +711,7 @@ function renderMoney() {
       const cat=getCat(e.category);
       return `<div class="li">
         <div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div>
-        <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · Engagement':''} · ${fmtDate(e.date)}</div></div>
+        <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · 💍 Engagement':''}${e.vendorId?` · 🤝 ${(S.vendors.find(v=>v.id===e.vendorId)||{name:''}).name}`:''}  · ${fmtDate(e.date)}</div></div>
         <div class="li-right"><div class="li-amt r">-${fmt(e.amount)}</div><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></div>
       </div>`;
     }).join('');
@@ -1055,11 +1055,13 @@ function openSavingsModal(){
 
 function openExpenseModal(){
   const catOpts=allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  const vendorOpts=`<option value="">-- None --</option>`+S.vendors.map(v=>`<option value="${v.id}">${getCat(v.category).emoji} ${v.name}</option>`).join('');
   openM(`
     <div class="m-title serif">Add Expense 🧾</div>
     <div class="fg"><label class="fl">Category</label><select class="fi" id="e-cat">${catOpts}</select></div>
     <div class="fg"><label class="fl">Event</label><select class="fi" id="e-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
     <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="e-amt" placeholder="e.g. 50000" inputmode="numeric"></div>
+    <div class="fg"><label class="fl">Link to Vendor (optional)</label><select class="fi" id="e-vendor">${vendorOpts}</select></div>
     <div class="fg"><label class="fl">Description (optional)</label><input class="fi" type="text" id="e-desc" placeholder="e.g. Venue booking advance"></div>
     <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="e-date"></div>
     <button class="btn" onclick="addExpense()">Add Expense</button>`);
@@ -1159,12 +1161,32 @@ async function addExpense(){
   const category=document.getElementById('e-cat').value;
   const event=document.getElementById('e-event').value;
   const amount=parseFloat(document.getElementById('e-amt').value);
+  const vendorId=document.getElementById('e-vendor').value||'';
   const description=document.getElementById('e-desc').value.trim();
   const date=document.getElementById('e-date').value||new Date().toISOString().split('T')[0];
   if(!amount||amount<=0){showToast('❌ Enter a valid amount');return;}
-  S.expenses.push({id:uid(),date,category,event,amount,description});
+
+  // Auto-fill description from vendor name if empty
+  let desc=description;
+  if(!desc && vendorId){
+    const v=S.vendors.find(v=>v.id===vendorId);
+    if(v) desc=v.name;
+  }
+
+  S.expenses.push({id:uid(),date,category,event,amount,description:desc,vendorId});
+
+  // Update vendor paidAmount if linked
+  if(vendorId){
+    const v=S.vendors.find(v=>v.id===vendorId);
+    if(v){
+      v.paidAmount=(v.paidAmount||0)+amount;
+      if(v.paidAmount>=(v.totalAmount||0) && v.status!=='paid') v.status='paid';
+      else if(v.paidAmount>0 && v.status==='shortlisted') v.status='advance';
+    }
+  }
+
   await saveS(); closeM(); renderTab();
-  showToast('✅ Expense added!');
+  showToast(vendorId?'✅ Expense added & vendor updated!':'✅ Expense added!');
   if(S.sheetsUrl) syncToSheets(true);
 }
 async function setGoal(){
@@ -1248,7 +1270,17 @@ async function delSaving(id){
 }
 async function delExpense(id){
   if(!confirm('Delete this expense?')) return;
-  S.expenses=S.expenses.filter(e=>e.id!==id); await saveS(); renderTab();
+  const exp=S.expenses.find(e=>e.id===id);
+  // Reverse vendor paidAmount if linked
+  if(exp?.vendorId){
+    const v=S.vendors.find(v=>v.id===exp.vendorId);
+    if(v){
+      v.paidAmount=Math.max(0,(v.paidAmount||0)-exp.amount);
+      if(v.paidAmount===0 && v.status==='paid') v.status='advance';
+    }
+  }
+  S.expenses=S.expenses.filter(e=>e.id!==id);
+  await saveS(); renderTab();
 }
 
 // ── Init ───────────────────────────────────────────────
