@@ -154,7 +154,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* Modal */
 .mbd{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:none;align-items:flex-end;justify-content:center;}
 .mbd.open{display:flex;}
-.modal{background:var(--sur);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0));max-height:92vh;overflow-y:auto;}
+.modal{background:var(--sur);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0));max-height:92vh;overflow-y:auto;transition:transform 0.25s ease;will-change:transform;}
 .m-handle{width:36px;height:4px;background:var(--bor);border-radius:2px;margin:0 auto 14px;}
 .m-title{font-family:'Playfair Display',serif;font-size:19px;margin-bottom:14px;}
 /* Forms */
@@ -912,13 +912,41 @@ function renderGuests() {
   const wInvited=wGuests.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
   const eInvited=eGuests.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
 
+  const pending=S.guests.filter(g=>g.event===guestEvFilter&&!g.invited).length;
+  const invitedCount=(guestEvFilter==='wedding'?wInvited:eInvited);
+
+  document.getElementById('pg-guests').innerHTML=`
+    <div class="sg">
+      <div class="sc"><div class="sl">💒 Wedding Guests</div><div class="sv o">${wTotal} people</div></div>
+      <div class="sc"><div class="sl">💍 Engagement Guests</div><div class="sv o">${eTotal} people</div></div>
+      <div class="sc"><div class="sl">Invites Sent</div><div class="sv g">${invitedCount}</div></div>
+      <div class="sc"><div class="sl">Invite Pending</div><div class="sv r">${pending}</div></div>
+    </div>
+    <div class="tog-wrap">
+      <div class="tog-opt ${guestEvFilter==='wedding'?'active':''}" onclick="setGuestEv('wedding')">💒 Wedding</div>
+      <div class="tog-opt ${guestEvFilter==='engagement'?'active':''}" onclick="setGuestEv('engagement')">💍 Engagement</div>
+    </div>
+    <input class="search-bar" type="text" id="guest-search-input" placeholder="Search guest name..." value="${guestSearch.replace(/"/g,'&quot;')}" oninput="filterGuests(this.value)">
+    <div id="guest-list-wrap"></div>`;
+
+  renderGuestList();
+
+  // Restore focus and cursor position if search was active
+  const inp = document.getElementById('guest-search-input');
+  if(inp && guestSearch) {
+    inp.focus();
+    const len = inp.value.length;
+    inp.setSelectionRange(len, len);
+  }
+}
+
+function renderGuestList() {
   let list = S.guests.filter(g=>g.event===guestEvFilter);
   if(guestSearch.trim()) list=list.filter(g=>g.name.toLowerCase().includes(guestSearch.toLowerCase()));
   list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
 
   const total=list.reduce((a,g)=>a+(g.count||1),0);
   const invited=list.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
-  const pending=list.filter(g=>!g.invited).length;
 
   const items=list.map(g=>{
     const initials=g.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
@@ -935,35 +963,28 @@ function renderGuests() {
     </div>`;
   }).join('');
 
-  document.getElementById('pg-guests').innerHTML=`
-    <div class="sg">
-      <div class="sc"><div class="sl">💒 Wedding Guests</div><div class="sv o">${wTotal} people</div></div>
-      <div class="sc"><div class="sl">💍 Engagement Guests</div><div class="sv o">${eTotal} people</div></div>
-      <div class="sc"><div class="sl">Invites Sent</div><div class="sv g">${guestEvFilter==='wedding'?wInvited:eInvited}</div></div>
-      <div class="sc"><div class="sl">Invite Pending</div><div class="sv r">${pending}</div></div>
-    </div>
-    <div class="tog-wrap">
-      <div class="tog-opt ${guestEvFilter==='wedding'?'active':''}" onclick="setGuestEv('wedding')">💒 Wedding</div>
-      <div class="tog-opt ${guestEvFilter==='engagement'?'active':''}" onclick="setGuestEv('engagement')">💍 Engagement</div>
-    </div>
-    <input class="search-bar" type="text" placeholder="Search guest name..." value="${guestSearch}" oninput="setGuestSearch(this.value)">
-    <div class="card">
-      <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':'💍 Engagement'} · ${total} people · ${invited} invited</div>
-      ${items||'<div class="empty"><div class="empty-ic">👥</div>No guests yet.<br>Tap + to add guests.</div>'}
-    </div>`;
+  const wrap = document.getElementById('guest-list-wrap');
+  if(wrap) wrap.innerHTML=`<div class="card">
+    <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':'💍 Engagement'} · ${total} people · ${invited} invited</div>
+    ${items||'<div class="empty"><div class="empty-ic">👥</div>No guests yet.<br>Tap + to add guests.</div>'}
+  </div>`;
 }
 
-function setGuestEv(ev){guestEvFilter=ev; renderGuests();}
-function setGuestSearch(val){guestSearch=val; renderGuests();}
+function filterGuests(val){
+  guestSearch=val;
+  renderGuestList();  // only update list, search bar stays intact
+}
+
+function setGuestEv(ev){ guestEvFilter=ev; guestSearch=''; renderGuests(); }
 
 async function toggleInvite(id){
   const g=S.guests.find(g=>g.id===id); if(!g) return;
-  g.invited=!g.invited; await saveS(); renderGuests();
+  g.invited=!g.invited; await saveS(); renderGuestList();
   showToast(g.invited?'✉️ Marked as invited!':'Invite marked pending');
 }
 async function delGuest(id){
   if(!confirm('Remove this guest?')) return;
-  S.guests=S.guests.filter(g=>g.id!==id); await saveS(); renderGuests();
+  S.guests=S.guests.filter(g=>g.id!==id); await saveS(); renderGuestList();
 }
 
 // ── Settings Tab ───────────────────────────────────────
@@ -1160,8 +1181,45 @@ async function deleteCat(id){
 }
 
 // ── Modals ─────────────────────────────────────────────
-function openM(html){ document.getElementById('mc').innerHTML=html; document.getElementById('modal').classList.add('open'); }
-function closeM(){ document.getElementById('modal').classList.remove('open'); }
+function openM(html){
+  document.getElementById('mc').innerHTML=html;
+  const bd=document.getElementById('modal');
+  bd.classList.add('open');
+
+  // Swipe down to close
+  const m=bd.querySelector('.modal');
+  let startY=0, startT=0;
+  m._onTouchStart=function(e){
+    startY=e.touches[0].clientY;
+    startT=Date.now();
+    m.style.transition='none';
+  };
+  m._onTouchMove=function(e){
+    const dy=e.touches[0].clientY-startY;
+    if(dy>0){ m.style.transform=`translateY(${dy}px)`; }
+  };
+  m._onTouchEnd=function(e){
+    const dy=e.changedTouches[0].clientY-startY;
+    const dt=Date.now()-startT;
+    m.style.transition='';
+    m.style.transform='';
+    // Close if swiped down >80px OR fast flick >40px in <300ms
+    if(dy>80||(dy>40&&dt<300)){ closeM(); }
+  };
+  m.removeEventListener('touchstart',m._onTouchStart);
+  m.removeEventListener('touchmove',m._onTouchMove);
+  m.removeEventListener('touchend',m._onTouchEnd);
+  m.addEventListener('touchstart',m._onTouchStart,{passive:true});
+  m.addEventListener('touchmove',m._onTouchMove,{passive:true});
+  m.addEventListener('touchend',m._onTouchEnd,{passive:true});
+}
+function closeM(){
+  const bd=document.getElementById('modal');
+  bd.classList.remove('open');
+  const m=bd.querySelector('.modal');
+  m.style.transform='';
+  m.style.transition='';
+}
 function mClickOut(e){ if(e.target.id==='modal') closeM(); }
 
 function openAddModal(){
