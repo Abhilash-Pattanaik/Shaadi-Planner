@@ -467,8 +467,10 @@ async function pullFromSheets(silent=false) {
     if(data.vendors)  S.vendors  = data.vendors;
     if(data.tasks)    S.tasks    = data.tasks;
     if(data.guests)   S.guests   = data.guests;
-    if(data.goal)     S.goal     = data.goal;
-    if(data.engGoal)  S.engGoal  = data.engGoal;
+    if(data.goal     !== undefined) S.goal    = Number(data.goal)    || 0;
+    if(data.engGoal  !== undefined) S.engGoal = Number(data.engGoal) || 0;
+    if(data.weddingDate)    S.weddingDate    = data.weddingDate;
+    if(data.engagementDate) S.engagementDate = data.engagementDate;
 
     await saveS();
     if(!silent) showToast('✅ Data pulled from Google Sheets!');
@@ -1021,6 +1023,14 @@ function renderSettings(){
   gl.appendRow(['Name','Event','No. of People','Invite Sent']);
   (data.guests||[]).forEach(function(r){gl.appendRow([r.name,r.event,r.count||1,r.invited?'Yes':'No']);});
 
+  var cf=ss.getSheetByName('Config')||ss.insertSheet('Config');
+  cf.clearContents();
+  cf.appendRow(['Key','Value']);
+  cf.appendRow(['goal',        data.goal||0]);
+  cf.appendRow(['engGoal',     data.engGoal||0]);
+  cf.appendRow(['weddingDate', data.weddingDate||'']);
+  cf.appendRow(['engagementDate', data.engagementDate||'']);
+
   return ContentService.createTextOutput('ok');
 }
 
@@ -1054,7 +1064,29 @@ function doGet(e){
     var guests=sheetToObjects('Guests',['name','event','count','invited']);
     guests=guests.map(function(r){r.count=parseInt(r.count)||1;r.invited=(r.invited==='Yes'||r.invited===true);r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
 
-    var result=JSON.stringify({savings:savings,expenses:expenses,vendors:vendors,tasks:tasks,guests:guests});
+    var goal=0,engGoal=0,weddingDate='',engagementDate='';
+    var cfg=ss.getSheetByName('Config');
+    if(cfg&&cfg.getLastRow()>1){
+      var cfgData=cfg.getRange(2,1,cfg.getLastRow()-1,2).getValues();
+      cfgData.forEach(function(row){
+        if(row[0]==='goal')            goal=parseFloat(row[1])||0;
+        if(row[0]==='engGoal')         engGoal=parseFloat(row[1])||0;
+        if(row[0]==='weddingDate')     weddingDate=row[1]||'';
+        if(row[0]==='engagementDate')  engagementDate=row[1]||'';
+      });
+    }
+
+    var result=JSON.stringify({
+      goal:goal,
+      engGoal:engGoal,
+      weddingDate:weddingDate,
+      engagementDate:engagementDate,
+      savings:savings,
+      expenses:expenses,
+      vendors:vendors,
+      tasks:tasks,
+      guests:guests
+    });
     return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON);
   }
   return ContentService.createTextOutput('ok');
