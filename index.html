@@ -77,7 +77,20 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .pills{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;}
 .pill{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--bor);background:var(--sur2);color:var(--text2);white-space:nowrap;user-select:none;}
 .pill.active{background:var(--gold-l);color:var(--gold-d);border-color:var(--gold);}
-/* Toggle switch */
+/* Guest list */
+.guest-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid var(--bor);}
+.guest-item:last-child{border-bottom:none;}
+.guest-avatar{width:34px;height:34px;border-radius:50%;background:var(--sur2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--gold);flex-shrink:0;border:0.5px solid var(--bor);}
+.guest-info{flex:1;min-width:0;}
+.guest-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.guest-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.invite-badge{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:500;cursor:pointer;user-select:none;}
+.invite-yes{background:var(--green-l);color:var(--green);}
+.invite-no{background:var(--sur2);color:var(--text3);border:0.5px solid var(--bor);}
+.guest-count{font-size:12px;font-weight:500;color:var(--text2);white-space:nowrap;}
+.search-bar{width:100%;padding:9px 12px;background:var(--sur2);border:0.5px solid var(--bor);border-radius:var(--rs);font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;margin-bottom:10px;}
+.search-bar:focus{border-color:var(--gold);}
+.search-bar::placeholder{color:var(--text3);}
 .tog-wrap{display:flex;align-items:center;gap:0;margin-bottom:12px;background:var(--sur2);border-radius:20px;padding:3px;border:0.5px solid var(--bor);}
 .tog-opt{flex:1;text-align:center;padding:6px 10px;border-radius:16px;font-size:12px;font-weight:500;cursor:pointer;color:var(--text3);transition:all 0.18s;user-select:none;white-space:nowrap;}
 .tog-opt.active{background:var(--sur);color:var(--gold);box-shadow:0 1px 6px rgba(124,58,237,0.12);}
@@ -203,6 +216,7 @@ select.fi{appearance:none;cursor:pointer;}
 <div class="pg" id="pg-money"></div>
 <div class="pg" id="pg-tasks"></div>
 <div class="pg" id="pg-vendors"></div>
+<div class="pg" id="pg-guests"></div>
 <div class="pg" id="pg-settings"></div>
 
 <div class="tab-bar">
@@ -210,7 +224,8 @@ select.fi{appearance:none;cursor:pointer;}
   <button class="tb" onclick="goTab('money')" id="tb-money"><div class="ti">💰</div>Money</button>
   <button class="tb" onclick="goTab('tasks')" id="tb-tasks"><div class="ti">✅</div>Tasks</button>
   <button class="tb" onclick="goTab('vendors')" id="tb-vendors"><div class="ti">🤝</div>Vendors</button>
-  <button class="tb" onclick="goTab('settings')" id="tb-settings"><div class="ti">⚙️</div>Settings</button>
+  <button class="tb" onclick="goTab('guests')" id="tb-guests"><div class="ti">👥</div>Guests</button>
+  <button class="tb" onclick="goTab('settings')" id="tb-settings"><div class="ti">⚙️</div>More</button>
 </div>
 
 <button class="fab" id="fab" onclick="openAddModal()">+</button>
@@ -279,7 +294,7 @@ const DEFAULT_TASKS = [
 let S = {
   goal:0, engGoal:0,
   weddingDate:'2026-12-02', engagementDate:'2026-07-01',
-  savings:[], expenses:[], vendors:[], tasks:[],
+  savings:[], expenses:[], vendors:[], tasks:[], guests:[],
   customCats:[],
   sheetsUrl:'', lastSync:null,
   theme:'auto'
@@ -351,7 +366,7 @@ async function syncToSheets(silent=false) {
       goal:S.goal, engGoal:S.engGoal,
       weddingDate:S.weddingDate, engagementDate:S.engagementDate,
       savings:S.savings, expenses:S.expenses,
-      vendors:S.vendors, tasks:S.tasks,
+      vendors:S.vendors, tasks:S.tasks, guests:S.guests,
       exportedAt:new Date().toISOString()
     });
     // Use no-cors POST with URLSearchParams — works in sandboxed iframes
@@ -406,6 +421,7 @@ async function pullFromSheets(silent=false) {
     if(data.expenses) S.expenses = data.expenses;
     if(data.vendors)  S.vendors  = data.vendors;
     if(data.tasks)    S.tasks    = data.tasks;
+    if(data.guests)   S.guests   = data.guests;
     if(data.goal)     S.goal     = data.goal;
     if(data.engGoal)  S.engGoal  = data.engGoal;
 
@@ -437,6 +453,10 @@ function exportCSV(type) {
     csv='Task,Category,Event,Due Date,Done\n';
     S.tasks.forEach(t=>{csv+=`"${t.title}","${t.category}","${t.event}","${t.dueDate||''}","${t.done?'Yes':'No'}"\n`;});
     fn='shaadi_tasks.csv';
+  } else if(type==='guests'){
+    csv='Name,Event,No. of People,Invite Sent\n';
+    S.guests.forEach(g=>{csv+=`"${g.name}","${g.event}",${g.count||1},"${g.invited?'Yes':'No'}"\n`;});
+    fn='shaadi_guests.csv';
   } else {
     csv='Type,Details,Amount,Date\n';
     S.savings.forEach(s=>{csv+=`"Savings","${s.month||''}",${s.amount},"${fmtDate(s.date)}"\n`;});
@@ -469,6 +489,7 @@ function renderTab() {
   else if(curTab==='money') renderMoney();
   else if(curTab==='tasks') renderTasks();
   else if(curTab==='vendors') renderVendors();
+  else if(curTab==='guests') renderGuests();
   else renderSettings();
 }
 
@@ -835,6 +856,71 @@ async function delVendor(id){
 }
 function editVendor(id){openVendorModal(id);}
 
+// ── Guests Tab ─────────────────────────────────────────
+let guestEvFilter='wedding', guestSearch='';
+
+function renderGuests() {
+  const wGuests=S.guests.filter(g=>g.event==='wedding');
+  const eGuests=S.guests.filter(g=>g.event==='engagement');
+  const wTotal=wGuests.reduce((a,g)=>a+(g.count||1),0);
+  const eTotal=eGuests.reduce((a,g)=>a+(g.count||1),0);
+  const wInvited=wGuests.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
+  const eInvited=eGuests.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
+
+  let list = S.guests.filter(g=>g.event===guestEvFilter);
+  if(guestSearch.trim()) list=list.filter(g=>g.name.toLowerCase().includes(guestSearch.toLowerCase()));
+  list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
+
+  const total=list.reduce((a,g)=>a+(g.count||1),0);
+  const invited=list.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
+  const pending=list.filter(g=>!g.invited).length;
+
+  const items=list.map(g=>{
+    const initials=g.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+    return `<div class="guest-item">
+      <div class="guest-avatar">${initials}</div>
+      <div class="guest-info">
+        <div class="guest-name">${g.name}</div>
+        <div class="guest-meta">
+          <span class="invite-badge ${g.invited?'invite-yes':'invite-no'}" onclick="toggleInvite('${g.id}')">${g.invited?'✓ Invited':'Invite Pending'}</span>
+          <span style="color:var(--text3)">👥 ${g.count||1} ${(g.count||1)===1?'person':'people'}</span>
+        </div>
+      </div>
+      <button class="btn-ic" onclick="delGuest('${g.id}')">✕</button>
+    </div>`;
+  }).join('');
+
+  document.getElementById('pg-guests').innerHTML=`
+    <div class="sg">
+      <div class="sc"><div class="sl">💒 Wedding Guests</div><div class="sv o">${wTotal} people</div></div>
+      <div class="sc"><div class="sl">💍 Engagement Guests</div><div class="sv o">${eTotal} people</div></div>
+      <div class="sc"><div class="sl">Invites Sent</div><div class="sv g">${guestEvFilter==='wedding'?wInvited:eInvited}</div></div>
+      <div class="sc"><div class="sl">Invite Pending</div><div class="sv r">${pending}</div></div>
+    </div>
+    <div class="tog-wrap">
+      <div class="tog-opt ${guestEvFilter==='wedding'?'active':''}" onclick="setGuestEv('wedding')">💒 Wedding</div>
+      <div class="tog-opt ${guestEvFilter==='engagement'?'active':''}" onclick="setGuestEv('engagement')">💍 Engagement</div>
+    </div>
+    <input class="search-bar" type="text" placeholder="Search guest name..." value="${guestSearch}" oninput="setGuestSearch(this.value)">
+    <div class="card">
+      <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':'💍 Engagement'} · ${total} people · ${invited} invited</div>
+      ${items||'<div class="empty"><div class="empty-ic">👥</div>No guests yet.<br>Tap + to add guests.</div>'}
+    </div>`;
+}
+
+function setGuestEv(ev){guestEvFilter=ev; renderGuests();}
+function setGuestSearch(val){guestSearch=val; renderGuests();}
+
+async function toggleInvite(id){
+  const g=S.guests.find(g=>g.id===id); if(!g) return;
+  g.invited=!g.invited; await saveS(); renderGuests();
+  showToast(g.invited?'✉️ Marked as invited!':'Invite marked pending');
+}
+async function delGuest(id){
+  if(!confirm('Remove this guest?')) return;
+  S.guests=S.guests.filter(g=>g.id!==id); await saveS(); renderGuests();
+}
+
 // ── Settings Tab ───────────────────────────────────────
 function renderSettings(){
   const sheetSet=!!S.sheetsUrl;
@@ -863,6 +949,11 @@ function renderSettings(){
   tk.clearContents();
   tk.appendRow(['Task','Category','Event','Due Date','Done']);
   (data.tasks||[]).forEach(function(r){tk.appendRow([r.title,r.category,r.event,r.dueDate||'',r.done?'Yes':'No']);});
+
+  var gl=ss.getSheetByName('Guests')||ss.insertSheet('Guests');
+  gl.clearContents();
+  gl.appendRow(['Name','Event','No. of People','Invite Sent']);
+  (data.guests||[]).forEach(function(r){gl.appendRow([r.name,r.event,r.count||1,r.invited?'Yes':'No']);});
 
   return ContentService.createTextOutput('ok');
 }
@@ -894,7 +985,10 @@ function doGet(e){
     var tasks=sheetToObjects('Tasks',['title','category','event','dueDate','done']);
     tasks=tasks.map(function(r){r.done=(r.done==='Yes'||r.done===true);r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
 
-    var result=JSON.stringify({savings:savings,expenses:expenses,vendors:vendors,tasks:tasks});
+    var guests=sheetToObjects('Guests',['name','event','count','invited']);
+    guests=guests.map(function(r){r.count=parseInt(r.count)||1;r.invited=(r.invited==='Yes'||r.invited===true);r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
+
+    var result=JSON.stringify({savings:savings,expenses:expenses,vendors:vendors,tasks:tasks,guests:guests});
     return ContentService.createTextOutput(result).setMimeType(ContentService.MimeType.JSON);
   }
   return ContentService.createTextOutput('ok');
@@ -952,6 +1046,7 @@ function doGet(e){
         <div class="exp-card" onclick="exportCSV('expenses')"><div style="font-size:24px">🧾</div><div style="font-size:13px;font-weight:500;margin-top:4px">Expenses CSV</div><div style="font-size:11px;color:var(--text3)">${S.expenses.length} entries</div></div>
         <div class="exp-card" onclick="exportCSV('vendors')"><div style="font-size:24px">🤝</div><div style="font-size:13px;font-weight:500;margin-top:4px">Vendors CSV</div><div style="font-size:11px;color:var(--text3)">${S.vendors.length} vendors</div></div>
         <div class="exp-card" onclick="exportCSV('tasks')"><div style="font-size:24px">✅</div><div style="font-size:13px;font-weight:500;margin-top:4px">Tasks CSV</div><div style="font-size:11px;color:var(--text3)">${S.tasks.length} tasks</div></div>
+        <div class="exp-card" onclick="exportCSV('guests')"><div style="font-size:24px">👥</div><div style="font-size:13px;font-weight:500;margin-top:4px">Guests CSV</div><div style="font-size:11px;color:var(--text3)">${S.guests.length} guests</div></div>
         <div class="exp-card" onclick="exportCSV('all')"><div style="font-size:24px">📊</div><div style="font-size:13px;font-weight:500;margin-top:4px">All Data CSV</div><div style="font-size:11px;color:var(--text3)">Combined</div></div>
         <div class="exp-card" onclick="exportJSON()"><div style="font-size:24px">📦</div><div style="font-size:13px;font-weight:500;margin-top:4px">JSON Backup</div><div style="font-size:11px;color:var(--text3)">Full backup</div></div>
         <div class="exp-card" onclick="document.getElementById('import-file').click()"><div style="font-size:24px">📥</div><div style="font-size:13px;font-weight:500;margin-top:4px">Import JSON</div><div style="font-size:11px;color:var(--text3)">Restore backup</div></div>
@@ -1026,15 +1121,105 @@ function mClickOut(e){ if(e.target.id==='modal') closeM(); }
 
 function openAddModal(){
   openM(`
-    <div class="m-title serif">Add Entry</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
-      <button class="btn" onclick="closeM();setTimeout(openSavingsModal,100)">💰 Add Savings</button>
-      <button class="btn" onclick="closeM();setTimeout(openExpenseModal,100)">🧾 Add Expense</button>
+    <div style="font-family:'Playfair Display',Georgia,serif;font-size:18px;color:var(--text);margin-bottom:4px;">Add new entry</div>
+    <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;">Swipe to see all options</div>
+    <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;-ms-overflow-style:none;margin:0 -18px;padding-left:18px;padding-right:18px;">
+      <div onclick="closeM();setTimeout(openSavingsModal,100)" style="flex-shrink:0;width:100px;background:var(--sur2);border:1px solid rgba(124,58,237,0.2);border-radius:18px;padding:18px 10px 14px;text-align:center;cursor:pointer;transition:all 0.18s;" ontouchstart="this.style.background='var(--sur3)';this.style.borderColor='var(--gold)'" ontouchend="this.style.background='var(--sur2)';this.style.borderColor='rgba(124,58,237,0.2)'">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(124,58,237,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px;">💰</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text);">Savings</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;">Monthly</div>
+      </div>
+      <div onclick="closeM();setTimeout(openExpenseModal,100)" style="flex-shrink:0;width:100px;background:var(--sur2);border:1px solid rgba(192,36,211,0.2);border-radius:18px;padding:18px 10px 14px;text-align:center;cursor:pointer;transition:all 0.18s;" ontouchstart="this.style.background='var(--sur3)';this.style.borderColor='var(--gold)'" ontouchend="this.style.background='var(--sur2)';this.style.borderColor='rgba(192,36,211,0.2)'">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(192,36,211,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px;">🧾</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text);">Expense</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;">Log payment</div>
+      </div>
+      <div onclick="closeM();setTimeout(openGuestModal,100)" style="flex-shrink:0;width:100px;background:var(--sur2);border:1px solid rgba(99,102,241,0.2);border-radius:18px;padding:18px 10px 14px;text-align:center;cursor:pointer;transition:all 0.18s;" ontouchstart="this.style.background='var(--sur3)';this.style.borderColor='var(--gold)'" ontouchend="this.style.background='var(--sur2)';this.style.borderColor='rgba(99,102,241,0.2)'">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px;">👥</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text);">Guest</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;">Invite list</div>
+      </div>
+      <div onclick="closeM();setTimeout(openTaskModal,100)" style="flex-shrink:0;width:100px;background:var(--sur2);border:1px solid rgba(168,85,247,0.2);border-radius:18px;padding:18px 10px 14px;text-align:center;cursor:pointer;transition:all 0.18s;" ontouchstart="this.style.background='var(--sur3)';this.style.borderColor='var(--gold)'" ontouchend="this.style.background='var(--sur2)';this.style.borderColor='rgba(168,85,247,0.2)'">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(168,85,247,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px;">✅</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text);">Task</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;">To-do item</div>
+      </div>
+      <div onclick="closeM();setTimeout(()=>openVendorModal(),100)" style="flex-shrink:0;width:100px;background:var(--sur2);border:1px solid rgba(109,40,217,0.2);border-radius:18px;padding:18px 10px 14px;text-align:center;cursor:pointer;transition:all 0.18s;" ontouchstart="this.style.background='var(--sur3)';this.style.borderColor='var(--gold)'" ontouchend="this.style.background='var(--sur2)';this.style.borderColor='rgba(109,40,217,0.2)'">
+        <div style="width:46px;height:46px;border-radius:14px;background:rgba(109,40,217,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 10px;">🤝</div>
+        <div style="font-size:12px;font-weight:500;color:var(--text);">Vendor</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;">Service provider</div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <button class="btn sec" onclick="closeM();setTimeout(openTaskModal,100)">✅ Add Task</button>
-      <button class="btn sec" onclick="closeM();setTimeout(()=>openVendorModal(),100)">🤝 Add Vendor</button>
+    <div style="display:flex;justify-content:center;gap:5px;margin-top:4px;">
+      <div style="width:16px;height:3px;border-radius:2px;background:var(--gold);"></div>
+      <div style="width:6px;height:3px;border-radius:2px;background:var(--bor);"></div>
+      <div style="width:6px;height:3px;border-radius:2px;background:var(--bor);"></div>
+      <div style="width:6px;height:3px;border-radius:2px;background:var(--bor);"></div>
+      <div style="width:6px;height:3px;border-radius:2px;background:var(--bor);"></div>
     </div>`);
+}
+
+function openGuestModal(){
+  openM(`
+    <div class="m-title serif">Add Guest 👥</div>
+    <div class="fg"><label class="fl">Guest Name</label><input class="fi" type="text" id="g-name" placeholder="e.g. Sharma Family"></div>
+    <div class="fg"><label class="fl">Event</label>
+      <div class="tog-wrap" style="margin-bottom:0">
+        <div class="tog-opt active" id="gev-w" onclick="selectGuestEv('wedding')">💒 Wedding</div>
+        <div class="tog-opt" id="gev-e" onclick="selectGuestEv('engagement')">💍 Engagement</div>
+        <div class="tog-opt" id="gev-b" onclick="selectGuestEv('both')">Both</div>
+      </div>
+      <input type="hidden" id="g-event" value="wedding">
+    </div>
+    <div class="fg"><label class="fl">No. of People</label><input class="fi" type="number" id="g-count" placeholder="e.g. 4" inputmode="numeric" value="1" min="1"></div>
+    <div class="fg"><label class="fl">Invite Sent?</label>
+      <div class="tog-wrap" style="margin-bottom:0">
+        <div class="tog-opt" id="ginv-n" onclick="selectInvite(false)">Not Yet</div>
+        <div class="tog-opt active" id="ginv-y" onclick="selectInvite(true)">✓ Yes, Sent</div>
+      </div>
+      <input type="hidden" id="g-invited" value="false">
+    </div>
+    <button class="btn" onclick="addGuest()">Add Guest</button>`);
+}
+
+let _selGuestInvited=false;
+function selectGuestEv(ev){
+  document.getElementById('g-event').value=ev;
+  const map={wedding:'gev-w',engagement:'gev-e',both:'gev-b'};
+  Object.entries(map).forEach(([key,id])=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle('active',key===ev);
+  });
+}
+function selectInvite(val){
+  _selGuestInvited=val;
+  const gi=document.getElementById('g-invited');
+  if(gi) gi.value=val;
+  const y=document.getElementById('ginv-y');
+  const n=document.getElementById('ginv-n');
+  if(y) y.classList.toggle('active',val);
+  if(n) n.classList.toggle('active',!val);
+}
+
+async function addGuest(){
+  const name=document.getElementById('g-name').value.trim();
+  const event=document.getElementById('g-event').value;
+  const count=parseInt(document.getElementById('g-count').value)||1;
+  const invited=document.getElementById('g-invited').value==='true';
+  if(!name){showToast('❌ Enter guest name');return;}
+
+  if(event==='both'){
+    // Add to both wedding and engagement
+    S.guests.push({id:uid(),name,event:'wedding',count,invited});
+    S.guests.push({id:uid(),name,event:'engagement',count,invited});
+  } else {
+    S.guests.push({id:uid(),name,event,count,invited});
+  }
+  await saveS(); closeM();
+  guestEvFilter=event==='both'?'wedding':event;
+  renderTab();
+  showToast(`✅ ${name} added!`);
+  if(S.sheetsUrl) syncToSheets(true);
 }
 
 function openSavingsModal(){
