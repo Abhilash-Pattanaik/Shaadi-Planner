@@ -410,6 +410,7 @@ async function syncToSheets(silent=false) {
     const payload = JSON.stringify({
       goal:S.goal, engGoal:S.engGoal,
       weddingDate:S.weddingDate, engagementDate:S.engagementDate,
+      customCats:S.customCats,
       savings:S.savings, expenses:S.expenses,
       vendors:S.vendors, tasks:S.tasks, guests:S.guests,
       exportedAt:new Date().toISOString()
@@ -467,6 +468,7 @@ async function pullFromSheets(silent=false) {
     if(data.vendors)  S.vendors  = data.vendors;
     if(data.tasks)    S.tasks    = data.tasks;
     if(data.guests)   S.guests   = data.guests;
+    if(data.customCats) S.customCats = data.customCats;
     if(data.goal     !== undefined) S.goal    = Number(data.goal)    || 0;
     if(data.engGoal  !== undefined) S.engGoal = Number(data.engGoal) || 0;
     if(data.weddingDate)    S.weddingDate    = data.weddingDate;
@@ -1026,10 +1028,11 @@ function renderSettings(){
   var cf=ss.getSheetByName('Config')||ss.insertSheet('Config');
   cf.clearContents();
   cf.appendRow(['Key','Value']);
-  cf.appendRow(['goal',        data.goal||0]);
-  cf.appendRow(['engGoal',     data.engGoal||0]);
-  cf.appendRow(['weddingDate', data.weddingDate||'']);
+  cf.appendRow(['goal',           data.goal||0]);
+  cf.appendRow(['engGoal',        data.engGoal||0]);
+  cf.appendRow(['weddingDate',    data.weddingDate||'']);
   cf.appendRow(['engagementDate', data.engagementDate||'']);
+  cf.appendRow(['customCats',     JSON.stringify(data.customCats||[])]);
 
   return ContentService.createTextOutput('ok');
 }
@@ -1064,7 +1067,7 @@ function doGet(e){
     var guests=sheetToObjects('Guests',['name','event','count','invited']);
     guests=guests.map(function(r){r.count=parseInt(r.count)||1;r.invited=(r.invited==='Yes'||r.invited===true);r.id=r.id||Date.now().toString(36)+Math.random().toString(36).slice(2,5);return r;});
 
-    var goal=0,engGoal=0,weddingDate='',engagementDate='';
+    var goal=0,engGoal=0,weddingDate='',engagementDate='',customCats=[];
     var cfg=ss.getSheetByName('Config');
     if(cfg&&cfg.getLastRow()>1){
       var cfgData=cfg.getRange(2,1,cfg.getLastRow()-1,2).getValues();
@@ -1073,6 +1076,7 @@ function doGet(e){
         if(row[0]==='engGoal')         engGoal=parseFloat(row[1])||0;
         if(row[0]==='weddingDate')     weddingDate=row[1]||'';
         if(row[0]==='engagementDate')  engagementDate=row[1]||'';
+        if(row[0]==='customCats'){     try{customCats=JSON.parse(row[1])||[];}catch(e){} }
       });
     }
 
@@ -1081,6 +1085,7 @@ function doGet(e){
       engGoal:engGoal,
       weddingDate:weddingDate,
       engagementDate:engagementDate,
+      customCats:customCats,
       savings:savings,
       expenses:expenses,
       vendors:vendors,
