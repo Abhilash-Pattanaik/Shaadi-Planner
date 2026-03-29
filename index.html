@@ -621,7 +621,7 @@ function renderHome() {
   const goal    = Number(S.goal)    || 0;
   const engGoal = Number(S.engGoal) || 0;
   const progress = goal > 0 ? Math.min(100, (totalSaved / goal) * 100) : 0;
-  const spendPct  = goal > 0 ? Math.min(100, (totalSpent / goal) * 100) : 0;
+  const spendPct  = goal > 0 ? Math.min(100, (wSpent / goal) * 100) : 0;
 
   // ① Expense by Category — donut
   const catTotals = {};
@@ -697,7 +697,7 @@ function renderHome() {
       <div class="sc"><div class="sl">Engagement Spend</div><div class="sv o">${fmt(eSpent)}</div></div>
     </div>
     ${engGoal ? `<div class="card" style="border-color:var(--gold)">
-      <div class="card-t" style="color:var(--gold-d)">💍 Engagement Budget</div>
+      <div class="card-t" style="color:var(--gold-d)">💍 Engagement Summary</div>
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <div class="big-n serif" style="font-size:22px">${fmt(eSpent)}</div>
         <div style="font-size:12px;color:var(--text3)">of ${fmt(engGoal)}</div>
@@ -706,9 +706,9 @@ function renderHome() {
       <div class="pl"><span>${Math.min(100, (eSpent / engGoal) * 100).toFixed(0)}% used</span><span>${fmt(engGoal - eSpent)} remaining</span></div>
     </div>` : ''}
     ${goal ? `<div class="card">
-      <div class="card-t">Spending vs Budget</div>
+      <div class="card-t">💒 Marriage Summary</div>
       <div class="pb" style="margin-top:4px"><div class="pf" style="width:${spendPct.toFixed(0)}%;background:var(--red)"></div></div>
-      <div class="pl" style="margin-top:4px"><span style="color:var(--red)">${fmt(totalSpent)} spent</span><span>${fmt(goal - totalSpent)} remaining</span></div>
+      <div class="pl" style="margin-top:4px"><span style="color:var(--red)">${fmt(wSpent)} spent</span><span>${fmt(goal - wSpent)} remaining</span></div>
     </div>` : ''}
     ${tasksTotal ? `<div class="card" style="display:flex;align-items:center;gap:12px">
       <div style="font-size:28px">✅</div>
