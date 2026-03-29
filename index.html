@@ -72,8 +72,12 @@ html[data-theme="dark"]{
   --sh:0 2px 16px rgba(0,0,0,0.4);
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 .serif{font-family:'Playfair Display',serif;}
+
+/* ── Mobile layout (default) ── */
+.app-shell{max-width:480px;margin:0 auto;position:relative;}
+
 /* Header */
 .hdr{background:var(--sur);padding:12px 16px 10px;border-bottom:0.5px solid var(--bor);position:sticky;top:0;z-index:100;}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;}
@@ -82,14 +86,69 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .icon-btn{background:var(--sur2);border:0.5px solid var(--bor);border-radius:var(--rs);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;user-select:none;}
 .cd-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
 .cd-pill{background:var(--gold-l);color:var(--gold-d);font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
-/* Tabs */
+
+/* Tab bar — mobile bottom */
 .tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);}
 .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 0 7px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:9px;font-family:'DM Sans',sans-serif;transition:color 0.2s;}
 .tb.active{color:var(--gold);}
 .ti{font-size:18px;margin-bottom:3px;line-height:1;}
-/* Pages */
+
+/* Pages — mobile */
 .pg{padding:14px 14px 88px;display:none;}
 .pg.active{display:block;}
+
+/* ── Desktop layout (≥900px) ── */
+@media(min-width:900px){
+  body{overflow:hidden;height:100vh;}
+  .app-shell{max-width:100%;display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto 1fr;height:100vh;}
+
+  /* Header spans full width */
+  .hdr{grid-column:1/-1;grid-row:1;position:sticky;top:0;z-index:100;padding:14px 24px 12px;display:flex;align-items:center;justify-content:space-between;}
+  .hdr-top{flex:1;}
+  .hdr-title{font-size:22px;}
+  .cd-row{margin-top:0;margin-left:20px;}
+
+  /* Sidebar — left column */
+  .tab-bar{position:static;transform:none;width:auto;max-width:none;flex-direction:column;border-top:none;border-right:0.5px solid var(--bor);grid-column:1;grid-row:2;padding:16px 0;height:100%;overflow-y:auto;align-items:stretch;}
+  .tb{flex:none;flex-direction:row;justify-content:flex-start;padding:11px 20px;font-size:13px;gap:12px;border-radius:0;}
+  .tb.active{color:var(--gold);background:var(--gold-l);}
+  .tb:hover:not(.active){background:var(--sur2);}
+  .ti{font-size:20px;margin-bottom:0;}
+
+  /* Main content — right column */
+  .pages-wrap{grid-column:2;grid-row:2;overflow-y:auto;height:100%;}
+  .pg{padding:24px 28px 40px;display:none;}
+  .pg.active{display:block;}
+
+  /* FAB — bottom right of content */
+  .fab{position:fixed;bottom:28px;right:28px;width:54px;height:54px;}
+
+  /* Toast */
+  .toast{bottom:40px;}
+
+  /* Modal centered on desktop */
+  .mbd{align-items:center;}
+  .modal{border-radius:16px;max-width:500px;max-height:85vh;}
+
+  /* Dashboard 2-col grid */
+  .desk-2col{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
+  .desk-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+  .desk-span2{grid-column:1/-1;}
+
+  /* Stat grid 4-col on desktop */
+  .sg{grid-template-columns:repeat(4,1fr);}
+
+  /* Wider charts */
+  .chart-wrap.h200{height:240px;}
+  .chart-wrap.h180{height:200px;}
+  .chart-wrap.h160{height:180px;}
+
+  /* Export grid 3-col */
+  .exp-grid{grid-template-columns:repeat(3,1fr);}
+
+  /* Sidebar label under app name */
+  .desk-sidebar-footer{padding:16px 20px;border-top:0.5px solid var(--bor);font-size:11px;color:var(--text3);margin-top:auto;}
+}
 /* Cards */
 .card{background:var(--sur);border-radius:var(--r);border:0.5px solid var(--bor);padding:14px;margin-bottom:10px;}
 .card-t{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3);margin-bottom:8px;}
@@ -226,35 +285,43 @@ select.fi{appearance:none;cursor:pointer;}
 </style>
 </head>
 <body>
+<div class="app-shell">
 
 <div class="hdr">
   <div class="hdr-top">
-    <div class="hdr-title serif">Shaadi Planner 💍</div>
-    <div class="hdr-act">
-      <div class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Toggle theme">✨</div>
-      <div class="icon-btn" id="sync-btn" onclick="manualSync()" title="Sync"><span id="sync-ic">☁️</span></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="hdr-title serif">Shaadi Planner 💍</div>
+      <div class="cd-row" id="cd-row-wrap">
+        <div class="cd-pill" id="cd-w">💒 Loading...</div>
+        <div class="cd-pill" id="cd-e">💍 Loading...</div>
+      </div>
     </div>
   </div>
-  <div class="cd-row">
-    <div class="cd-pill" id="cd-w">💒 Loading...</div>
-    <div class="cd-pill" id="cd-e">💍 Loading...</div>
+  <div class="hdr-act">
+    <div class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Toggle theme">✨</div>
+    <div class="icon-btn" id="sync-btn" onclick="manualSync()" title="Sync"><span id="sync-ic">☁️</span></div>
   </div>
 </div>
 
-<div class="pg active" id="pg-home"></div>
-<div class="pg" id="pg-money"></div>
-<div class="pg" id="pg-tasks"></div>
-<div class="pg" id="pg-vendors"></div>
-<div class="pg" id="pg-guests"></div>
-<div class="pg" id="pg-settings"></div>
-
-<div class="tab-bar">
+<div class="tab-bar" id="tab-bar">
   <button class="tb active" onclick="goTab('home')" id="tb-home"><div class="ti">🏠</div>Home</button>
   <button class="tb" onclick="goTab('money')" id="tb-money"><div class="ti">💰</div>Money</button>
   <button class="tb" onclick="goTab('tasks')" id="tb-tasks"><div class="ti">✅</div>Tasks</button>
   <button class="tb" onclick="goTab('vendors')" id="tb-vendors"><div class="ti">🤝</div>Vendors</button>
   <button class="tb" onclick="goTab('guests')" id="tb-guests"><div class="ti">👥</div>Guests</button>
-  <button class="tb" onclick="goTab('settings')" id="tb-settings"><div class="ti">⚙️</div>More</button>
+  <button class="tb" onclick="goTab('settings')" id="tb-settings"><div class="ti">⚙️</div>Settings</button>
+  <div class="desk-sidebar-footer">Shaadi Planner · 2 Dec 2026</div>
+</div>
+
+<div class="pages-wrap">
+  <div class="pg active" id="pg-home"></div>
+  <div class="pg" id="pg-money"></div>
+  <div class="pg" id="pg-tasks"></div>
+  <div class="pg" id="pg-vendors"></div>
+  <div class="pg" id="pg-guests"></div>
+  <div class="pg" id="pg-settings"></div>
+</div>
+
 </div>
 
 <button class="fab" id="fab" onclick="openAddModal()">+</button>
@@ -720,12 +787,14 @@ function renderHome() {
       </div>
       <button class="btn-sm sec" onclick="goTab('tasks')">View</button>
     </div>` : ''}
-    <div class="card"><div class="card-t">Savings vs Spending (Cumulative)</div>${lineLabels.length>1?`<div class="chart-wrap h200"><canvas id="line-chart"></canvas></div>`:`<div class="chart-empty">Add savings &amp; expenses to see the trend line</div>`}</div>
-    <div class="card"><div class="card-t">Expense by Category</div>${pieData.length?`<div class="chart-wrap h200"><canvas id="pie-chart"></canvas></div>`:`<div class="chart-empty">Add expenses to see category breakdown</div>`}</div>
-    <div class="card"><div class="card-t">Savings by Source</div>${srcData.length?`<div class="chart-wrap h180"><canvas id="src-chart"></canvas></div>`:`<div class="chart-empty">Add savings with a source (MF, FD, Jupiter…)</div>`}</div>
-    <div class="card"><div class="card-t">Monthly Savings</div>${barData.length?`<div class="chart-wrap h160"><canvas id="bar-chart"></canvas></div>`:`<div class="chart-empty">Add monthly savings to see the bar chart</div>`}</div>
-    <div class="card"><div class="card-t">Wedding vs Engagement Spend</div>${(wSpent+eSpent>0)?`<div class="chart-wrap" style="height:90px"><canvas id="evt-chart"></canvas></div>`:`<div class="chart-empty">Add expenses tagged to Wedding or Engagement</div>`}</div>
-    ${recent.length ? `<div class="card"><div class="card-t">Recent Activity</div>${recentHTML}</div>` : ''}
+    <div class="desk-2col">
+    ${lineLabels.length > 1 ? `<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-wrap h200"><canvas id="line-chart"></canvas></div></div>` : `<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-empty">Add savings &amp; expenses to see the trend line</div></div>`}
+    ${pieData.length ? `<div class="card"><div class="card-t">Expense by Category</div><div class="chart-wrap h200"><canvas id="pie-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Expense by Category</div><div class="chart-empty">Add expenses to see category breakdown</div></div>`}
+    ${srcData.length ? `<div class="card"><div class="card-t">Savings by Source</div><div class="chart-wrap h180"><canvas id="src-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Savings by Source</div><div class="chart-empty">Add savings with a source (MF, FD, Jupiter…)</div></div>`}
+    ${barData.length ? `<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-wrap h160"><canvas id="bar-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-empty">Add monthly savings to see the bar chart</div></div>`}
+    ${(wSpent+eSpent>0) ? `<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap" style="height:120px"><canvas id="evt-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-empty">Add expenses tagged to Wedding or Engagement</div></div>`}
+    ${recent.length ? `<div class="card desk-span2"><div class="card-t">Recent Activity</div>${recentHTML}</div>` : ''}
+    </div>
     <div class="card" style="text-align:center;padding:14px">
       <div style="font-size:24px">💒</div>
       <div class="serif" style="font-size:15px;margin-top:5px;color:var(--gold)">${wd.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
