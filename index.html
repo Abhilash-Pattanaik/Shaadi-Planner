@@ -282,6 +282,16 @@ select.fi{appearance:none;cursor:pointer;}
 /* Goal banner */
 .goal-b{background:var(--gold-l);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
 .goal-b-text{flex:1;font-size:13px;color:var(--gold-d);}
+/* Desktop table */
+.dt{width:100%;border-collapse:collapse;font-size:13px;}
+.dt th{text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3);padding:8px 12px;border-bottom:0.5px solid var(--bor);background:var(--sur2);}
+.dt td{padding:10px 12px;border-bottom:0.5px solid var(--bor);color:var(--text);vertical-align:middle;}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:var(--sur2);cursor:pointer;}
+.dt-wrap{overflow-x:auto;border-radius:var(--r);border:0.5px solid var(--bor);background:var(--sur);margin-bottom:12px;}
+.dt-act{display:flex;gap:6px;}
+.desk-summary-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;}
+.desk-hero-row{display:grid;grid-template-columns:280px 1fr;gap:16px;margin-bottom:12px;align-items:start;}
 </style>
 </head>
 <body>
@@ -677,6 +687,47 @@ function renderHBarChart(canvasId, labels, data, colors) {
   });
 }
 
+function renderGaugeChart(canvasId, value, max, label) {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId); if (!ctx) return;
+  const pct = max > 0 ? Math.min(1, value / max) : 0;
+  const remaining = Math.max(0, 1 - pct);
+  const gold = getCSSVar('--gold') || '#8B5CF6';
+  const sur2 = getCSSVar('--sur2') || '#eee';
+  charts[canvasId] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [pct, remaining],
+        backgroundColor: [gold, sur2],
+        borderWidth: 0,
+        circumference: 180,
+        rotation: -90
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '72%',
+      plugins: { legend: { display: false }, tooltip: { enabled: false } }
+    },
+    plugins: [{
+      id: 'gauge-text',
+      afterDraw(chart) {
+        const { ctx: c, chartArea: { left, right, top, bottom } } = chart;
+        const cx = (left + right) / 2, cy = bottom - 10;
+        c.save();
+        c.font = `500 22px 'Playfair Display', Georgia, serif`;
+        c.fillStyle = getCSSVar('--text') || '#222';
+        c.textAlign = 'center';
+        c.fillText(label, cx, cy - 4);
+        c.font = `400 11px 'DM Sans', sans-serif`;
+        c.fillStyle = getCSSVar('--text3') || '#888';
+        c.fillText(`${(pct * 100).toFixed(0)}% of goal`, cx, cy + 16);
+        c.restore();
+      }
+    }]
+  });
+}
+
 // ── Home / Dashboard ───────────────────────────────────
 function renderHome() {
   const wd = getWeddingDate(), ed = getEngagementDate();
@@ -692,10 +743,12 @@ function renderHome() {
   const progress = goal > 0 ? Math.min(100, (totalSaved / goal) * 100) : 0;
   const spendPct  = goal > 0 ? Math.min(100, (wSpent / goal) * 100) : 0;
 
-  // ① Expense by Category — donut
+  const isDesktop = window.innerWidth >= 900;
+
+  // ① Expense by Category — bar (desktop) / donut (mobile)
   const catTotals = {};
   S.expenses.forEach(e => { catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; });
-  const catE = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const catE = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const pieLabels = catE.map(([id]) => getCat(id).emoji + ' ' + getCat(id).name);
   const pieData   = catE.map(([, v]) => v);
   const pieColors = catE.map(([id]) => getCat(id).color);
@@ -754,47 +807,92 @@ function renderHome() {
 
   document.getElementById('pg-home').innerHTML = `
     ${!goal ? `<div class="goal-b"><div style="font-size:22px">🎯</div><div class="goal-b-text"><strong>Set your wedding budget</strong><br>Track your savings progress</div><button class="btn-sm" onclick="openGoalModal()">Set Budget</button></div>` : ''}
+
+    ${isDesktop ? `
+    <!-- DESKTOP HERO ROW: Gauge + Stat Cards -->
+    <div class="desk-hero-row">
+      <div class="card" style="text-align:center;padding:16px 20px">
+        <div class="card-t">Total Savings</div>
+        <div style="height:160px;position:relative"><canvas id="gauge-chart"></canvas></div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Goal: ${fmt(goal||0)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start">
+        <div class="sc"><div class="sl">Net Balance</div><div class="sv ${balance>=0?'g':'r'}">${fmt(balance)}</div></div>
+        <div class="sc"><div class="sl">Total Spent</div><div class="sv r">${fmt(totalSpent)}</div></div>
+        <div class="sc"><div class="sl">Wedding Spend</div><div class="sv r">${fmt(wSpent)}</div></div>
+        <div class="sc"><div class="sl">Engagement Spend</div><div class="sv o">${fmt(eSpent)}</div></div>
+        <div class="sc"><div class="sl">Months Tracked</div><div class="sv o">${S.savings.length}</div></div>
+        <div class="sc"><div class="sl">Expenses</div><div class="sv">${S.expenses.length}</div></div>
+      </div>
+    </div>
+    <!-- DESKTOP SUMMARY ROW: Engagement + Marriage side by side -->
+    <div class="desk-summary-row">
+      ${engGoal ? `<div class="card" style="border-color:var(--gold)">
+        <div class="card-t" style="color:var(--gold-d)">💍 Engagement Summary</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <div class="big-n serif" style="font-size:22px">${fmt(eSpent)}</div>
+          <div style="font-size:12px;color:var(--text3)">of ${fmt(engGoal)}</div>
+        </div>
+        <div class="pb"><div class="pf" style="width:${Math.min(100,(eSpent/engGoal)*100).toFixed(0)}%;background:var(--gold)"></div></div>
+        <div class="pl"><span>${Math.min(100,(eSpent/engGoal)*100).toFixed(0)}% used</span><span>${fmt(engGoal-eSpent)} remaining</span></div>
+      </div>` : '<div></div>'}
+      ${goal ? `<div class="card">
+        <div class="card-t">💒 Marriage Summary</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div class="big-n serif" style="font-size:22px">${fmt(wSpent)}</div>
+          <div style="font-size:12px;color:var(--text3)">of ${fmt(goal)}</div>
+        </div>
+        <div class="pb" style="margin-top:0"><div class="pf" style="width:${spendPct.toFixed(0)}%;background:var(--red)"></div></div>
+        <div class="pl"><span style="color:var(--red)">${fmt(wSpent)} spent</span><span>${fmt(goal-wSpent)} remaining</span></div>
+      </div>` : '<div></div>'}
+    </div>
+    <!-- DESKTOP CHARTS 2-COL -->
+    <div class="desk-2col">
+      ${lineLabels.length>1?`<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-wrap h200"><canvas id="line-chart"></canvas></div></div>`:`<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-empty">Add savings &amp; expenses to see trend</div></div>`}
+      ${pieData.length?`<div class="card"><div class="card-t">Expense by Category</div><div class="chart-wrap" style="height:${pieData.length*38+40}px"><canvas id="pie-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add expenses to see breakdown</div></div>`}
+      ${srcData.length?`<div class="card"><div class="card-t">Savings by Source</div><div class="chart-wrap h180"><canvas id="src-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add savings to see source breakdown</div></div>`}
+      ${barData.length?`<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-wrap h180"><canvas id="bar-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add monthly savings to see chart</div></div>`}
+      ${(wSpent+eSpent>0)?`<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap" style="height:100px"><canvas id="evt-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add events expenses to compare</div></div>`}
+      ${tasksTotal?`<div class="card"><div class="card-t">Tasks Progress</div><div style="display:flex;align-items:center;gap:14px;padding:8px 0"><div style="font-size:28px">✅</div><div style="flex:1"><div style="font-size:13px;font-weight:500;margin-bottom:6px">${tasksDone} of ${tasksTotal} done</div><div class="pb" style="margin:0"><div class="pf" style="width:${((tasksDone/tasksTotal)*100).toFixed(0)}%;background:var(--green)"></div></div></div><button class="btn-sm sec" onclick="goTab('tasks')">View</button></div></div>`:``}
+      ${recent.length?`<div class="card desk-span2"><div class="card-t">Recent Activity</div>${recentHTML}</div>`:''}
+    </div>
+    ` : `
+    <!-- MOBILE LAYOUT -->
     <div class="card">
       <div class="card-t">Total Savings</div>
       <div class="big-n serif">${fmt(totalSaved)}</div>
-      ${goal ? `<div class="pb"><div class="pf" style="width:${progress.toFixed(0)}%;background:var(--gold)"></div></div><div class="pl"><span>${progress.toFixed(0)}% of goal</span><span>Goal: ${fmt(goal)}</span></div>` : ''}
+      ${goal?`<div class="pb"><div class="pf" style="width:${progress.toFixed(0)}%;background:var(--gold)"></div></div><div class="pl"><span>${progress.toFixed(0)}% of goal</span><span>Goal: ${fmt(goal)}</span></div>`:''}
     </div>
     <div class="sg">
-      <div class="sc"><div class="sl">Net Balance</div><div class="sv ${balance >= 0 ? 'g' : 'r'}">${fmt(balance)}</div></div>
+      <div class="sc"><div class="sl">Net Balance</div><div class="sv ${balance>=0?'g':'r'}">${fmt(balance)}</div></div>
       <div class="sc"><div class="sl">Total Spent</div><div class="sv r">${fmt(totalSpent)}</div></div>
       <div class="sc"><div class="sl">Wedding Spend</div><div class="sv r">${fmt(wSpent)}</div></div>
       <div class="sc"><div class="sl">Engagement Spend</div><div class="sv o">${fmt(eSpent)}</div></div>
     </div>
-    ${engGoal ? `<div class="card" style="border-color:var(--gold)">
+    ${engGoal?`<div class="card" style="border-color:var(--gold)">
       <div class="card-t" style="color:var(--gold-d)">💍 Engagement Summary</div>
-      <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <div class="big-n serif" style="font-size:22px">${fmt(eSpent)}</div>
-        <div style="font-size:12px;color:var(--text3)">of ${fmt(engGoal)}</div>
-      </div>
-      <div class="pb"><div class="pf" style="width:${Math.min(100, (eSpent / engGoal) * 100).toFixed(0)}%;background:var(--gold)"></div></div>
-      <div class="pl"><span>${Math.min(100, (eSpent / engGoal) * 100).toFixed(0)}% used</span><span>${fmt(engGoal - eSpent)} remaining</span></div>
-    </div>` : ''}
-    ${goal ? `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><div class="big-n serif" style="font-size:22px">${fmt(eSpent)}</div><div style="font-size:12px;color:var(--text3)">of ${fmt(engGoal)}</div></div>
+      <div class="pb"><div class="pf" style="width:${Math.min(100,(eSpent/engGoal)*100).toFixed(0)}%;background:var(--gold)"></div></div>
+      <div class="pl"><span>${Math.min(100,(eSpent/engGoal)*100).toFixed(0)}% used</span><span>${fmt(engGoal-eSpent)} remaining</span></div>
+    </div>`:''}
+    ${goal?`<div class="card">
       <div class="card-t">💒 Marriage Summary</div>
       <div class="pb" style="margin-top:4px"><div class="pf" style="width:${spendPct.toFixed(0)}%;background:var(--red)"></div></div>
-      <div class="pl" style="margin-top:4px"><span style="color:var(--red)">${fmt(wSpent)} spent</span><span>${fmt(goal - wSpent)} remaining</span></div>
-    </div>` : ''}
-    ${tasksTotal ? `<div class="card" style="display:flex;align-items:center;gap:12px">
+      <div class="pl" style="margin-top:4px"><span style="color:var(--red)">${fmt(wSpent)} spent</span><span>${fmt(goal-wSpent)} remaining</span></div>
+    </div>`:''}
+    ${tasksTotal?`<div class="card" style="display:flex;align-items:center;gap:12px">
       <div style="font-size:28px">✅</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:500">${tasksDone} of ${tasksTotal} tasks done</div>
-        <div class="pb" style="margin:6px 0 0"><div class="pf" style="width:${((tasksDone / tasksTotal) * 100).toFixed(0)}%;background:var(--green)"></div></div>
-      </div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:500">${tasksDone} of ${tasksTotal} tasks done</div>
+      <div class="pb" style="margin:6px 0 0"><div class="pf" style="width:${((tasksDone/tasksTotal)*100).toFixed(0)}%;background:var(--green)"></div></div></div>
       <button class="btn-sm sec" onclick="goTab('tasks')">View</button>
-    </div>` : ''}
-    <div class="desk-2col">
-    ${lineLabels.length > 1 ? `<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-wrap h200"><canvas id="line-chart"></canvas></div></div>` : `<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-empty">Add savings &amp; expenses to see the trend line</div></div>`}
-    ${pieData.length ? `<div class="card"><div class="card-t">Expense by Category</div><div class="chart-wrap h200"><canvas id="pie-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Expense by Category</div><div class="chart-empty">Add expenses to see category breakdown</div></div>`}
-    ${srcData.length ? `<div class="card"><div class="card-t">Savings by Source</div><div class="chart-wrap h180"><canvas id="src-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Savings by Source</div><div class="chart-empty">Add savings with a source (MF, FD, Jupiter…)</div></div>`}
-    ${barData.length ? `<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-wrap h160"><canvas id="bar-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-empty">Add monthly savings to see the bar chart</div></div>`}
-    ${(wSpent+eSpent>0) ? `<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap" style="height:120px"><canvas id="evt-chart"></canvas></div></div>` : `<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-empty">Add expenses tagged to Wedding or Engagement</div></div>`}
-    ${recent.length ? `<div class="card desk-span2"><div class="card-t">Recent Activity</div>${recentHTML}</div>` : ''}
-    </div>
+    </div>`:''}
+    <div class="card"><div class="card-t">Savings vs Spending (Cumulative)</div>${lineLabels.length>1?`<div class="chart-wrap h200"><canvas id="line-chart"></canvas></div>`:`<div class="chart-empty">Add savings &amp; expenses to see trend</div>`}</div>
+    <div class="card"><div class="card-t">Expense by Category</div>${pieData.length?`<div class="chart-wrap h200"><canvas id="pie-chart"></canvas></div>`:`<div class="chart-empty">Add expenses to see breakdown</div>`}</div>
+    <div class="card"><div class="card-t">Savings by Source</div>${srcData.length?`<div class="chart-wrap h160"><canvas id="src-chart"></canvas></div>`:`<div class="chart-empty">Add savings with source</div>`}</div>
+    <div class="card"><div class="card-t">Monthly Savings</div>${barData.length?`<div class="chart-wrap h160"><canvas id="bar-chart"></canvas></div>`:`<div class="chart-empty">Add monthly savings</div>`}</div>
+    <div class="card"><div class="card-t">Wedding vs Engagement</div>${(wSpent+eSpent>0)?`<div class="chart-wrap" style="height:90px"><canvas id="evt-chart"></canvas></div>`:`<div class="chart-empty">Add event expenses</div>`}</div>
+    ${recent.length?`<div class="card"><div class="card-t">Recent Activity</div>${recentHTML}</div>`:''}
+    `}
     <div class="card" style="text-align:center;padding:14px">
       <div style="font-size:24px">💒</div>
       <div class="serif" style="font-size:15px;margin-top:5px;color:var(--gold)">${wd.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
@@ -802,10 +900,15 @@ function renderHome() {
     </div>`;
 
   requestAnimationFrame(() => {
+    if (isDesktop && goal) renderGaugeChart('gauge-chart', totalSaved, goal, fmt(totalSaved));
     if (lineLabels.length > 1) renderLineChart('line-chart', lineLabels, lineDs);
-    if (pieData.length)  renderPieChart('pie-chart',  pieLabels,  pieData,  pieColors);
+    // Desktop: horizontal bar for categories; Mobile: donut
+    if (pieData.length) {
+      if (isDesktop) renderHBarChart('pie-chart', pieLabels, pieData, pieColors);
+      else renderPieChart('pie-chart', pieLabels, pieData, pieColors);
+    }
     if (srcData.length > 1) renderPieChart('src-chart', srcLabels, srcData, srcColors);
-    if (barData.length)  renderBarChart('bar-chart',  barLabels,  barData);
+    if (barData.length)  renderBarChart('bar-chart', barLabels, barData);
     if (wSpent + eSpent > 0) renderHBarChart('evt-chart', evtLabels, evtData, evtColors);
   });
 }
@@ -825,18 +928,38 @@ function renderMoney() {
   </div>`;
   let content='';
 
+  const isDesktop = window.innerWidth >= 900;
+
   if(mTab==='savings'){
     const list=[...S.savings].sort((a,b)=>new Date(b.date)-new Date(a.date));
     const total=list.reduce((a,x)=>a+x.amount,0);
-    const items=list.map(s=>{
-      const src=SAVINGS_SOURCES.find(x=>x.id===(s.source||'savings'))||SAVINGS_SOURCES[3];
-      return `<div class="li">
-      <div class="li-icon" style="background:var(--green-l)">${src.emoji}</div>
-      <div class="li-info"><div class="li-title">${cleanMonth(s.month)||fmtDate(s.date)}</div><div class="li-sub">${src.name}${s.note?' · '+s.note:''} · ${fmtDate(s.date)}</div></div>
-      <div class="li-right"><div class="li-amt g">+${fmt(s.amount)}</div><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></div>
-    </div>`;}).join('');
-    content=`<div class="sc" style="margin-bottom:10px;text-align:center"><div class="sl">Total Saved</div><div class="sv g" style="font-size:24px">${fmt(total)}</div></div>
-    <div class="card"><div class="card-t">Savings (${list.length})</div>${items||'<div class="empty"><div class="empty-ic">🌱</div>No savings yet. Tap + to add.</div>'}</div>`;
+    if(isDesktop){
+      const rows=list.map(s=>{
+        const src=SAVINGS_SOURCES.find(x=>x.id===(s.source||'savings'))||SAVINGS_SOURCES[3];
+        return `<tr>
+          <td>${cleanMonth(s.month)||'—'}</td>
+          <td>${src.emoji} ${src.name}</td>
+          <td>${s.note||'—'}</td>
+          <td>${fmtDate(s.date)}</td>
+          <td style="text-align:right;color:var(--green);font-weight:500">+${fmt(s.amount)}</td>
+          <td><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></td>
+        </tr>`;}).join('');
+      content=`<div class="sc" style="margin-bottom:12px;display:inline-block;padding:10px 20px"><div class="sl">Total Saved</div><div class="sv g" style="font-size:22px">${fmt(total)}</div></div>
+      <div class="dt-wrap"><table class="dt">
+        <thead><tr><th>Month</th><th>Source</th><th>Note</th><th>Date</th><th style="text-align:right">Amount</th><th></th></tr></thead>
+        <tbody>${rows||`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No savings yet. Click + to add.</td></tr>`}</tbody>
+      </table></div>`;
+    } else {
+      const items=list.map(s=>{
+        const src=SAVINGS_SOURCES.find(x=>x.id===(s.source||'savings'))||SAVINGS_SOURCES[3];
+        return `<div class="li">
+        <div class="li-icon" style="background:var(--green-l)">${src.emoji}</div>
+        <div class="li-info"><div class="li-title">${cleanMonth(s.month)||fmtDate(s.date)}</div><div class="li-sub">${src.name}${s.note?' · '+s.note:''} · ${fmtDate(s.date)}</div></div>
+        <div class="li-right"><div class="li-amt g">+${fmt(s.amount)}</div><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></div>
+      </div>`;}).join('');
+      content=`<div class="sc" style="margin-bottom:10px;text-align:center"><div class="sl">Total Saved</div><div class="sv g" style="font-size:24px">${fmt(total)}</div></div>
+      <div class="card"><div class="card-t">Savings (${list.length})</div>${items||'<div class="empty"><div class="empty-ic">🌱</div>No savings yet. Tap + to add.</div>'}</div>`;
+    }
   } else {
     let expenses=S.expenses;
     if(mEvent!=='all') expenses=expenses.filter(e=>mEvent==='engagement'?e.event==='engagement':e.event!=='engagement');
@@ -846,15 +969,34 @@ function renderMoney() {
     const catTotals={};
     S.expenses.forEach(e=>{catTotals[e.category]=(catTotals[e.category]||0)+e.amount;});
     const catPills=`<div class="pills"><div class="pill ${mCatF==='all'?'active':''}" onclick="setMCat('all')">All</div>${allCats().filter(c=>catTotals[c.id]).map(c=>`<div class="pill ${mCatF===c.id?'active':''}" onclick="setMCat('${c.id}')">${c.emoji} ${c.name}</div>`).join('')}</div>`;
-    const items=sorted.map(e=>{
-      const cat=getCat(e.category);
-      return `<div class="li">
-        <div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div>
-        <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · 💍 Engagement':''}${e.vendorId?` · 🤝 ${(S.vendors.find(v=>v.id===e.vendorId)||{name:''}).name}`:''}  · ${fmtDate(e.date)}</div></div>
-        <div class="li-right"><div class="li-amt r">-${fmt(e.amount)}</div><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></div>
-      </div>`;
-    }).join('');
-    content=`${catPills}<div class="card"><div class="card-t">Expenses · ${fmt(total)}</div>${items||'<div class="empty"><div class="empty-ic">🧾</div>No expenses yet. Tap + to add.</div>'}</div>`;
+    if(isDesktop){
+      const rows=sorted.map(e=>{
+        const cat=getCat(e.category);
+        const vendor=e.vendorId?S.vendors.find(v=>v.id===e.vendorId):null;
+        return `<tr>
+          <td>${fmtDate(e.date)}</td>
+          <td>${cat.emoji} ${cat.name}</td>
+          <td>${e.description||'—'}</td>
+          <td><span class="badge ${e.event==='engagement'?'o':'b'}">${e.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span></td>
+          <td>${vendor?`🤝 ${vendor.name}`:'—'}</td>
+          <td style="text-align:right;color:var(--red);font-weight:500">-${fmt(e.amount)}</td>
+          <td><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></td>
+        </tr>`;}).join('');
+      content=`${catPills}<div class="sc" style="margin-bottom:12px;display:inline-block;padding:10px 20px"><div class="sl">Total Expenses</div><div class="sv r" style="font-size:22px">${fmt(total)}</div></div>
+      <div class="dt-wrap"><table class="dt">
+        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Event</th><th>Vendor</th><th style="text-align:right">Amount</th><th></th></tr></thead>
+        <tbody>${rows||`<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No expenses yet. Click + to add.</td></tr>`}</tbody>
+      </table></div>`;
+    } else {
+      const items=sorted.map(e=>{
+        const cat=getCat(e.category);
+        return `<div class="li">
+          <div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div>
+          <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · 💍 Engagement':''}${e.vendorId?` · 🤝 ${(S.vendors.find(v=>v.id===e.vendorId)||{name:''}).name}`:''}  · ${fmtDate(e.date)}</div></div>
+          <div class="li-right"><div class="li-amt r">-${fmt(e.amount)}</div><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></div>
+        </div>`;}).join('');
+      content=`${catPills}<div class="card"><div class="card-t">Expenses · ${fmt(total)}</div>${items||'<div class="empty"><div class="empty-ic">🧾</div>No expenses yet. Tap + to add.</div>'}</div>`;
+    }
   }
   document.getElementById('pg-money').innerHTML=evToggle+typePills+content;
 }
@@ -880,18 +1022,32 @@ function renderTasks() {
   const pending=S.tasks.filter(t=>!t.done).length;
   const done=S.tasks.filter(t=>t.done).length;
 
-  const items=tasks.map(t=>`<div class="task-item">
-    <div class="task-cb ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
-    <div class="task-info">
-      <div class="task-title ${t.done?'done':''}">${t.title}</div>
-      <div class="task-meta">
-        <span>${t.category}</span>
-        <span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span>
-        ${t.dueDate?`<span>📅 ${fmtDate(t.dueDate)}</span>`:''}
+  const isDesktop = window.innerWidth >= 900;
+  const items = isDesktop ?
+    `<div class="dt-wrap"><table class="dt">
+      <thead><tr><th style="width:32px"></th><th>Task</th><th>Category</th><th>Event</th><th>Due Date</th><th style="width:40px"></th></tr></thead>
+      <tbody>${tasks.map(t=>`<tr>
+        <td><div class="task-cb ${t.done?'done':''}" onclick="toggleTask('${t.id}')" style="margin:0">${t.done?'✓':''}</div></td>
+        <td style="${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.title}</td>
+        <td><span style="color:var(--text3);font-size:12px">${t.category}</span></td>
+        <td><span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span></td>
+        <td style="color:var(--text3);font-size:12px">${t.dueDate?fmtDate(t.dueDate):'—'}</td>
+        <td><button class="btn-ic" onclick="delTask('${t.id}')">✕</button></td>
+      </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No tasks. Click + to add.</td></tr>`}
+      </tbody></table></div>`
+    :
+    tasks.map(t=>`<div class="task-item">
+      <div class="task-cb ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+      <div class="task-info">
+        <div class="task-title ${t.done?'done':''}">${t.title}</div>
+        <div class="task-meta">
+          <span>${t.category}</span>
+          <span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span>
+          ${t.dueDate?`<span>📅 ${fmtDate(t.dueDate)}</span>`:''}
+        </div>
       </div>
-    </div>
-    <button class="btn-ic" onclick="delTask('${t.id}')">✕</button>
-  </div>`).join('');
+      <button class="btn-ic" onclick="delTask('${t.id}')">✕</button>
+    </div>`).join('') || '<div class="empty"><div class="empty-ic">🎉</div>All done! Tap + to add more.</div>';
 
   document.getElementById('pg-tasks').innerHTML=`
     <div class="sg">
@@ -899,10 +1055,7 @@ function renderTasks() {
       <div class="sc"><div class="sl">Completed</div><div class="sv g">${done}</div></div>
     </div>
     ${fToggle}
-    <div class="card">
-      <div class="card-t">${taskFilter==='done'?'Completed':'Pending'} Tasks (${tasks.length})</div>
-      ${items||'<div class="empty"><div class="empty-ic">🎉</div>All done! Tap + to add more.</div>'}
-    </div>`;
+    ${isDesktop ? items : `<div class="card"><div class="card-t">${taskFilter==='done'?'Completed':'Pending'} Tasks (${tasks.length})</div>${items}</div>`}`;
 }
 function setTaskF(f){taskFilter=f;renderTasks();}
 async function toggleTask(id){
@@ -919,43 +1072,64 @@ async function delTask(id){
 function renderVendors() {
   const totalCommitted=S.vendors.reduce((a,v)=>a+(v.totalAmount||0),0);
   const totalPaid=S.vendors.reduce((a,v)=>a+(v.paidAmount||0),0);
+  const totalBalance=totalCommitted-totalPaid;
+  const isDesktop=window.innerWidth>=900;
 
-  const cards=S.vendors.map(v=>{
-    const cat=getCat(v.category);
-    const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
-    return `<div class="vendor-card">
-      <div class="vendor-top">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px">
+  const statsHtml=`<div class="sg" style="margin-bottom:12px">
+    <div class="sc"><div class="sl">Total Committed</div><div class="sv o">${fmt(totalCommitted)}</div></div>
+    <div class="sc"><div class="sl">Total Paid</div><div class="sv g">${fmt(totalPaid)}</div></div>
+    <div class="sc"><div class="sl">Balance Due</div><div class="sv r">${fmt(totalBalance)}</div></div>
+    <div class="sc"><div class="sl">Vendors</div><div class="sv">${S.vendors.length}</div></div>
+  </div>`;
+
+  if(isDesktop){
+    const rows=S.vendors.map(v=>{
+      const cat=getCat(v.category);
+      const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
+      const bal=(v.totalAmount||0)-(v.paidAmount||0);
+      return `<tr>
+        <td><span style="font-size:18px">${cat.emoji}</span> <strong>${v.name}</strong>${v.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${v.notes}</div>`:''}</td>
+        <td style="color:var(--text3)">${cat.name}</td>
+        <td style="text-align:right">${fmt(v.totalAmount||0)}</td>
+        <td style="text-align:right;color:var(--green)">${fmt(v.paidAmount||0)}</td>
+        <td style="text-align:right;color:${bal>0?'var(--red)':'var(--text3)'}">${fmt(bal)}</td>
+        <td><span class="badge ${st.cls}" style="cursor:pointer;white-space:nowrap" onclick="cycleVendorStatus('${v.id}')">${st.label}</span></td>
+        <td>${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')" style="font-size:11px">📞</button>`:''}</td>
+        <td><button class="btn-sm sec" onclick="editVendor('${v.id}')" style="font-size:11px">Edit</button></td>
+        <td><button class="btn-ic" onclick="delVendor('${v.id}')">✕</button></td>
+      </tr>`;}).join('');
+    document.getElementById('pg-vendors').innerHTML=`${statsHtml}
+      <div class="dt-wrap"><table class="dt">
+        <thead><tr><th>Vendor</th><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">Paid</th><th style="text-align:right">Balance</th><th>Status</th><th></th><th></th><th></th></tr></thead>
+        <tbody>${rows||`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No vendors yet. Click + to add.</td></tr>`}</tbody>
+      </table></div>`;
+  } else {
+    const cards=S.vendors.map(v=>{
+      const cat=getCat(v.category);
+      const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
+      return `<div class="vendor-card">
+        <div class="vendor-top">
+          <div><div style="display:flex;align-items:center;gap:8px">
             <div style="font-size:18px">${cat.emoji}</div>
             <div><div class="vendor-name">${v.name}</div><div class="vendor-cat">${cat.name}</div></div>
+          </div></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <span class="badge ${st.cls}" style="cursor:pointer" onclick="cycleVendorStatus('${v.id}')">${st.label}</span>
+            <button class="btn-ic" onclick="delVendor('${v.id}')">✕</button>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-          <span class="badge ${st.cls}" style="cursor:pointer" onclick="cycleVendorStatus('${v.id}')">${st.label}</span>
-          <button class="btn-ic" onclick="delVendor('${v.id}')">✕</button>
+        ${v.notes?`<div style="font-size:12px;color:var(--text3);margin-top:8px">${v.notes}</div>`:''}
+        <div class="vendor-bottom">
+          <div class="vendor-amt"><span style="color:var(--text3);font-size:12px">Total: </span><strong>${fmt(v.totalAmount||0)}</strong>${v.paidAmount?` · <span style="color:var(--green);font-size:12px">Paid: ${fmt(v.paidAmount)}</span>`:''}</div>
+          <div class="vendor-actions">
+            ${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')">📞 Call</button>`:''}
+            <button class="btn-sm sec" onclick="editVendor('${v.id}')">Edit</button>
+          </div>
         </div>
-      </div>
-      ${v.notes?`<div style="font-size:12px;color:var(--text3);margin-top:8px">${v.notes}</div>`:''}
-      <div class="vendor-bottom">
-        <div class="vendor-amt">
-          <span style="color:var(--text3);font-size:12px">Total: </span><strong>${fmt(v.totalAmount||0)}</strong>
-          ${v.paidAmount?` · <span style="color:var(--green);font-size:12px">Paid: ${fmt(v.paidAmount)}</span>`:''}
-        </div>
-        <div class="vendor-actions">
-          ${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')">📞 Call</button>`:''}
-          <button class="btn-sm sec" onclick="editVendor('${v.id}')">Edit</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('pg-vendors').innerHTML=`
-    <div class="sg">
-      <div class="sc"><div class="sl">Committed</div><div class="sv o">${fmt(totalCommitted)}</div></div>
-      <div class="sc"><div class="sl">Paid Out</div><div class="sv g">${fmt(totalPaid)}</div></div>
-    </div>
-    ${cards||'<div class="empty"><div class="empty-ic">🤝</div>No vendors yet.<br>Tap + to add your first vendor.</div>'}`;
+      </div>`;}).join('');
+    document.getElementById('pg-vendors').innerHTML=`${statsHtml}
+      ${cards||'<div class="empty"><div class="empty-ic">🤝</div>No vendors yet.<br>Tap + to add.</div>'}`;
+  }
 }
 
 function callVendor(phone){
@@ -1020,27 +1194,44 @@ function renderGuestList() {
 
   const total=list.reduce((a,g)=>a+(g.count||1),0);
   const invited=list.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
-
-  const items=list.map(g=>{
-    const initials=g.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
-    return `<div class="guest-item">
-      <div class="guest-avatar">${initials}</div>
-      <div class="guest-info">
-        <div class="guest-name">${g.name}</div>
-        <div class="guest-meta">
-          <span class="invite-badge ${g.invited?'invite-yes':'invite-no'}" onclick="toggleInvite('${g.id}')">${g.invited?'✓ Invited':'Invite Pending'}</span>
-          <span style="color:var(--text3)">👥 ${g.count||1} ${(g.count||1)===1?'person':'people'}</span>
-        </div>
-      </div>
-      <button class="btn-ic" onclick="delGuest('${g.id}')">✕</button>
-    </div>`;
-  }).join('');
+  const isDesktop=window.innerWidth>=900;
 
   const wrap = document.getElementById('guest-list-wrap');
-  if(wrap) wrap.innerHTML=`<div class="card">
-    <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':'💍 Engagement'} · ${total} people · ${invited} invited</div>
-    ${items||'<div class="empty"><div class="empty-ic">👥</div>No guests yet.<br>Tap + to add guests.</div>'}
-  </div>`;
+  if(!wrap) return;
+
+  if(isDesktop){
+    const rows=list.map(g=>{
+      const initials=g.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:10px"><div class="guest-avatar" style="width:30px;height:30px;font-size:11px;flex-shrink:0">${initials}</div>${g.name}</div></td>
+        <td style="text-align:center">${g.count||1}</td>
+        <td><span class="invite-badge ${g.invited?'invite-yes':'invite-no'}" onclick="toggleInvite('${g.id}')" style="cursor:pointer">${g.invited?'✓ Invited':'Pending'}</span></td>
+        <td><button class="btn-ic" onclick="delGuest('${g.id}')">✕</button></td>
+      </tr>`;}).join('');
+    wrap.innerHTML=`<div class="dt-wrap"><table class="dt">
+      <thead><tr><th>Guest Name</th><th style="text-align:center">People</th><th>Invite Status</th><th></th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--text3)">No guests yet. Click + to add.</td></tr>`}</tbody>
+    </table></div>
+    <div style="font-size:12px;color:var(--text3);margin-top:6px">${total} people · ${invited} invited · ${total-invited} pending</div>`;
+  } else {
+    const items=list.map(g=>{
+      const initials=g.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+      return `<div class="guest-item">
+        <div class="guest-avatar">${initials}</div>
+        <div class="guest-info">
+          <div class="guest-name">${g.name}</div>
+          <div class="guest-meta">
+            <span class="invite-badge ${g.invited?'invite-yes':'invite-no'}" onclick="toggleInvite('${g.id}')">${g.invited?'✓ Invited':'Invite Pending'}</span>
+            <span style="color:var(--text3)">👥 ${g.count||1} ${(g.count||1)===1?'person':'people'}</span>
+          </div>
+        </div>
+        <button class="btn-ic" onclick="delGuest('${g.id}')">✕</button>
+      </div>`;}).join('');
+    wrap.innerHTML=`<div class="card">
+      <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':'💍 Engagement'} · ${total} people · ${invited} invited</div>
+      ${items||'<div class="empty"><div class="empty-ic">👥</div>No guests yet.<br>Tap + to add guests.</div>'}
+    </div>`;
+  }
 }
 
 function filterGuests(val){
