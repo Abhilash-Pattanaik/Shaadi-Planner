@@ -103,10 +103,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .app-shell{max-width:100%;display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto 1fr;height:100vh;}
 
   /* Header spans full width */
-  .hdr{grid-column:1/-1;grid-row:1;position:sticky;top:0;z-index:100;padding:14px 24px 12px;display:flex;align-items:center;justify-content:space-between;}
-  .hdr-top{flex:1;}
+  .hdr{grid-column:1/-1;grid-row:1;position:sticky;top:0;z-index:100;padding:12px 24px 10px;display:flex;align-items:center;justify-content:space-between;}
+  .hdr-top{flex:1;display:flex;align-items:center;gap:16px;}
   .hdr-title{font-size:22px;}
-  .cd-row{margin-top:0;margin-left:20px;}
+  .cd-row{margin-top:0;flex-wrap:nowrap;}
 
   /* Sidebar — left column */
   .tab-bar{position:static;transform:none;width:auto;max-width:none;flex-direction:column;border-top:none;border-right:0.5px solid var(--bor);grid-column:1;grid-row:2;padding:16px 0;height:100%;overflow-y:auto;align-items:stretch;}
@@ -299,17 +299,15 @@ select.fi{appearance:none;cursor:pointer;}
 
 <div class="hdr">
   <div class="hdr-top">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div class="hdr-title serif">Shaadi Planner 💍</div>
-      <div class="cd-row" id="cd-row-wrap">
-        <div class="cd-pill" id="cd-w">💒 Loading...</div>
-        <div class="cd-pill" id="cd-e">💍 Loading...</div>
-      </div>
+    <div class="hdr-title serif">Shaadi Planner 💍</div>
+    <div class="hdr-act">
+      <div class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Toggle theme">✨</div>
+      <div class="icon-btn" id="sync-btn" onclick="manualSync()" title="Sync"><span id="sync-ic">☁️</span></div>
     </div>
   </div>
-  <div class="hdr-act">
-    <div class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Toggle theme">✨</div>
-    <div class="icon-btn" id="sync-btn" onclick="manualSync()" title="Sync"><span id="sync-ic">☁️</span></div>
+  <div class="cd-row">
+    <div class="cd-pill" id="cd-w">💒 Loading...</div>
+    <div class="cd-pill" id="cd-e">💍 Loading...</div>
   </div>
 </div>
 
@@ -688,44 +686,30 @@ function renderHBarChart(canvasId, labels, data, colors) {
 }
 
 function renderGaugeChart(canvasId, value, max, label) {
-  destroyChart(canvasId);
-  const ctx = document.getElementById(canvasId); if (!ctx) return;
-  const pct = max > 0 ? Math.min(1, value / max) : 0;
-  const remaining = Math.max(0, 1 - pct);
-  const gold = getCSSVar('--gold') || '#8B5CF6';
-  const sur2 = getCSSVar('--sur2') || '#eee';
-  charts[canvasId] = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      datasets: [{
-        data: [pct, remaining],
-        backgroundColor: [gold, sur2],
-        borderWidth: 0,
-        circumference: 180,
-        rotation: -90
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, cutout: '72%',
-      plugins: { legend: { display: false }, tooltip: { enabled: false } }
-    },
-    plugins: [{
-      id: 'gauge-text',
-      afterDraw(chart) {
-        const { ctx: c, chartArea: { left, right, top, bottom } } = chart;
-        const cx = (left + right) / 2, cy = bottom - 10;
-        c.save();
-        c.font = `500 22px 'Playfair Display', Georgia, serif`;
-        c.fillStyle = getCSSVar('--text') || '#222';
-        c.textAlign = 'center';
-        c.fillText(label, cx, cy - 4);
-        c.font = `400 11px 'DM Sans', sans-serif`;
-        c.fillStyle = getCSSVar('--text3') || '#888';
-        c.fillText(`${(pct * 100).toFixed(0)}% of goal`, cx, cy + 16);
-        c.restore();
-      }
-    }]
-  });
+  // Use SVG gauge — more reliable than Chart.js plugin
+  const el = document.getElementById(canvasId);
+  if (!el) return;
+  const pct  = max > 0 ? Math.min(1, value / max) : 0;
+  const pctTxt = (pct * 100).toFixed(0) + '%';
+  const R = 90, cx = 120, cy = 110;
+  const startAngle = Math.PI;
+  const endAngle   = 2 * Math.PI;
+  const sweepAngle = startAngle + pct * Math.PI;
+  const x1 = cx + R * Math.cos(startAngle), y1 = cy + R * Math.sin(startAngle);
+  const x2 = cx + R * Math.cos(endAngle),   y2 = cy + R * Math.sin(endAngle);
+  const x3 = cx + R * Math.cos(sweepAngle), y3 = cy + R * Math.sin(sweepAngle);
+  const largeArc = pct > 0.5 ? 1 : 0;
+  const gold  = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#8B5CF6';
+  const bor   = getComputedStyle(document.documentElement).getPropertyValue('--bor').trim()  || 'rgba(124,58,237,0.12)';
+  const text  = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#1E1B2E';
+  const text3 = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim()|| '#9B8EC4';
+  el.innerHTML = `<svg viewBox="0 0 240 130" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+    <path d="M${x1},${y1} A${R},${R} 0 1,1 ${x2},${y2}" fill="none" stroke="${bor}" stroke-width="16" stroke-linecap="round"/>
+    ${pct > 0 ? `<path d="M${x1},${y1} A${R},${R} 0 ${largeArc},1 ${x3},${y3}" fill="none" stroke="${gold}" stroke-width="16" stroke-linecap="round"/>` : ''}
+    <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-family="Playfair Display,Georgia,serif" font-size="26" font-weight="500" fill="${text}">${label}</text>
+    <text x="${cx}" y="${cy + 14}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="13" fill="${gold}" font-weight="500">${pctTxt} of goal</text>
+    <text x="${cx}" y="${cy + 30}" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="${text3}">Goal: ${fmt(max)}</text>
+  </svg>`;
 }
 
 // ── Home / Dashboard ───────────────────────────────────
@@ -809,23 +793,28 @@ function renderHome() {
     ${!goal ? `<div class="goal-b"><div style="font-size:22px">🎯</div><div class="goal-b-text"><strong>Set your wedding budget</strong><br>Track your savings progress</div><button class="btn-sm" onclick="openGoalModal()">Set Budget</button></div>` : ''}
 
     ${isDesktop ? `
-    <!-- DESKTOP HERO ROW: Gauge + Stat Cards -->
-    <div class="desk-hero-row">
-      <div class="card" style="text-align:center;padding:16px 20px">
+    <!-- DESKTOP HERO ROW: Gauge (half) + Stat Cards (half) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px;align-items:start">
+      <div class="card" style="text-align:center;padding:20px">
         <div class="card-t">Total Savings</div>
-        <div style="height:160px;position:relative"><canvas id="gauge-chart"></canvas></div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Goal: ${fmt(goal||0)}</div>
+        <div id="gauge-chart" style="height:150px;display:flex;align-items:center;justify-content:center"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start">
         <div class="sc"><div class="sl">Net Balance</div><div class="sv ${balance>=0?'g':'r'}">${fmt(balance)}</div></div>
         <div class="sc"><div class="sl">Total Spent</div><div class="sv r">${fmt(totalSpent)}</div></div>
         <div class="sc"><div class="sl">Wedding Spend</div><div class="sv r">${fmt(wSpent)}</div></div>
         <div class="sc"><div class="sl">Engagement Spend</div><div class="sv o">${fmt(eSpent)}</div></div>
-        <div class="sc"><div class="sl">Months Tracked</div><div class="sv o">${S.savings.length}</div></div>
-        <div class="sc"><div class="sl">Expenses</div><div class="sv">${S.expenses.length}</div></div>
+        ${tasksTotal ? `<div class="sc" style="grid-column:1/-1">
+          <div class="sl">Tasks Progress</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+            <div class="pb" style="flex:1;margin:0"><div class="pf" style="width:${((tasksDone/tasksTotal)*100).toFixed(0)}%;background:var(--green)"></div></div>
+            <div style="font-size:13px;font-weight:500;white-space:nowrap">${tasksDone}/${tasksTotal}</div>
+            <button class="btn-sm sec" onclick="goTab('tasks')" style="font-size:11px">View</button>
+          </div>
+        </div>` : ''}
       </div>
     </div>
-    <!-- DESKTOP SUMMARY ROW: Engagement + Marriage side by side -->
+    <!-- DESKTOP SUMMARY ROW -->
     <div class="desk-summary-row">
       ${engGoal ? `<div class="card" style="border-color:var(--gold)">
         <div class="card-t" style="color:var(--gold-d)">💍 Engagement Summary</div>
@@ -853,7 +842,6 @@ function renderHome() {
       ${srcData.length?`<div class="card"><div class="card-t">Savings by Source</div><div class="chart-wrap h180"><canvas id="src-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add savings to see source breakdown</div></div>`}
       ${barData.length?`<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-wrap h180"><canvas id="bar-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add monthly savings to see chart</div></div>`}
       ${(wSpent+eSpent>0)?`<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap" style="height:100px"><canvas id="evt-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add events expenses to compare</div></div>`}
-      ${tasksTotal?`<div class="card"><div class="card-t">Tasks Progress</div><div style="display:flex;align-items:center;gap:14px;padding:8px 0"><div style="font-size:28px">✅</div><div style="flex:1"><div style="font-size:13px;font-weight:500;margin-bottom:6px">${tasksDone} of ${tasksTotal} done</div><div class="pb" style="margin:0"><div class="pf" style="width:${((tasksDone/tasksTotal)*100).toFixed(0)}%;background:var(--green)"></div></div></div><button class="btn-sm sec" onclick="goTab('tasks')">View</button></div></div>`:``}
       ${recent.length?`<div class="card desk-span2"><div class="card-t">Recent Activity</div>${recentHTML}</div>`:''}
     </div>
     ` : `
