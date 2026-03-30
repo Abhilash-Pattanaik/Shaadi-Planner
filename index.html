@@ -147,7 +147,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .exp-grid{grid-template-columns:repeat(3,1fr);}
 
   /* Sidebar label under app name */
-  .desk-sidebar-footer{padding:16px 20px;border-top:0.5px solid var(--bor);font-size:11px;color:var(--text3);margin-top:auto;}
+.desk-sidebar-footer{display:none;}
+@media(min-width:900px){
+  .desk-sidebar-footer{display:block;padding:16px 20px;border-top:0.5px solid var(--bor);font-size:11px;color:var(--text3);margin-top:auto;}
+}
 }
 /* Cards */
 .card{background:var(--sur);border-radius:var(--r);border:0.5px solid var(--bor);padding:14px;margin-bottom:10px;}
