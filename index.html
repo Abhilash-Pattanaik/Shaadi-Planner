@@ -800,6 +800,7 @@ function renderHome() {
       <div class="card" style="text-align:center;padding:20px">
         <div class="card-t">Total Savings</div>
         <div id="gauge-chart" style="height:150px;display:flex;align-items:center;justify-content:center"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Combined goal: ${fmt(goal+engGoal)}</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;align-content:start">
         <div class="sc"><div class="sl">Net Balance</div><div class="sv ${balance>=0?'g':'r'}">${fmt(balance)}</div></div>
@@ -808,9 +809,12 @@ function renderHome() {
         <div class="sc"><div class="sl">Engagement Spend</div><div class="sv o">${fmt(eSpent)}</div></div>
         ${tasksTotal ? `<div class="sc" style="grid-column:1/-1">
           <div class="sl">Tasks Progress</div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
-            <div class="pb" style="flex:1;margin:0"><div class="pf" style="width:${((tasksDone/tasksTotal)*100).toFixed(0)}%;background:var(--green)"></div></div>
-            <div style="font-size:13px;font-weight:500;white-space:nowrap">${tasksDone}/${tasksTotal}</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+            <div style="font-size:20px;flex-shrink:0">✅</div>
+            <div style="flex:1">
+              <div style="font-size:12px;color:var(--text2);margin-bottom:5px">${tasksDone} of ${tasksTotal} done</div>
+              <div class="pb" style="margin:0"><div class="pf" style="width:${((tasksDone/tasksTotal)*100).toFixed(0)}%;background:var(--green)"></div></div>
+            </div>
             <button class="btn-sm sec" onclick="goTab('tasks')" style="font-size:11px">View</button>
           </div>
         </div>` : ''}
@@ -843,7 +847,7 @@ function renderHome() {
       ${pieData.length?`<div class="card"><div class="card-t">Expense by Category</div><div class="chart-wrap" style="height:${pieData.length*38+40}px"><canvas id="pie-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add expenses to see breakdown</div></div>`}
       ${srcData.length?`<div class="card"><div class="card-t">Savings by Source</div><div class="chart-wrap h180"><canvas id="src-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add savings to see source breakdown</div></div>`}
       ${barData.length?`<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-wrap h180"><canvas id="bar-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add monthly savings to see chart</div></div>`}
-      ${(wSpent+eSpent>0)?`<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap" style="height:100px"><canvas id="evt-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add events expenses to compare</div></div>`}
+      ${(wSpent+eSpent>0)?`<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap h180"><canvas id="evt-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add events expenses to compare</div></div>`}
       ${recent.length?`<div class="card desk-span2"><div class="card-t">Recent Activity</div>${recentHTML}</div>`:''}
     </div>
     ` : `
@@ -890,7 +894,7 @@ function renderHome() {
     </div>`;
 
   requestAnimationFrame(() => {
-    if (isDesktop && goal) renderGaugeChart('gauge-chart', totalSaved, goal, fmt(totalSaved));
+    if (isDesktop && (goal||engGoal)) renderGaugeChart('gauge-chart', totalSaved, goal+engGoal, fmt(totalSaved));
     if (lineLabels.length > 1) renderLineChart('line-chart', lineLabels, lineDs);
     // Desktop: horizontal bar for categories; Mobile: donut
     if (pieData.length) {
