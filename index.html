@@ -321,7 +321,6 @@ select.fi{appearance:none;cursor:pointer;}
   <button class="tb" onclick="goTab('vendors')" id="tb-vendors"><div class="ti">🤝</div>Vendors</button>
   <button class="tb" onclick="goTab('guests')" id="tb-guests"><div class="ti">👥</div>Guests</button>
   <button class="tb" onclick="goTab('settings')" id="tb-settings"><div class="ti">⚙️</div>Settings</button>
-  <div class="desk-sidebar-footer">Shaadi Planner · 2 Dec 2026</div>
 </div>
 
 <div class="pages-wrap">
@@ -1864,6 +1863,13 @@ async function delExpense(id){
 // ── Init ───────────────────────────────────────────────
 async function init(){
   await loadS();
+  // Inject sidebar footer only on desktop
+  if(window.innerWidth>=900){
+    const footer=document.createElement('div');
+    footer.className='desk-sidebar-footer';
+    footer.textContent='Shaadi Planner · 2 Dec 2026';
+    document.getElementById('tab-bar').appendChild(footer);
+  }
 
   // Add default tasks if none
   if(!S.tasks.length){
