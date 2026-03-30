@@ -624,6 +624,35 @@ const charts={};
 function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function getCSSVar(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 
+function renderStackedBarChart(canvasId, labels, wData, eData) {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId); if (!ctx) return;
+  const tc   = getCSSVar('--text2')  || '#555';
+  const gold = getCSSVar('--gold')   || '#8B5CF6';
+  const red  = getCSSVar('--red')    || '#C026D3';
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '💒 Wedding',    data: wData, backgroundColor: gold + 'CC', borderRadius: 0, stack: 'cat' },
+        { label: '💍 Engagement', data: eData, backgroundColor: red  + 'CC', borderRadius: 4,  stack: 'cat' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11, family: 'DM Sans' }, color: tc, boxWidth: 12, padding: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ₹${Math.round(ctx.raw).toLocaleString('en-IN')}` } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { size: 11 }, color: tc } },
+        y: { stacked: true, grid: { color: getCSSVar('--bor') }, ticks: { font: { size: 10 }, color: tc, callback: v => '₹' + Math.round(v/1000) + 'k' } }
+      }
+    }
+  });
+}
+
 function renderPieChart(canvasId,labels,data,colors){
   destroyChart(canvasId);
   const ctx=document.getElementById(canvasId); if(!ctx||!data.length) return;
@@ -731,13 +760,20 @@ function renderHome() {
 
   const isDesktop = window.innerWidth >= 900;
 
-  // ① Expense by Category — bar (desktop) / donut (mobile)
-  const catTotals = {};
-  S.expenses.forEach(e => { catTotals[e.category] = (catTotals[e.category] || 0) + e.amount; });
-  const catE = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  // ① Expense by Category — stacked column (desktop) / donut (mobile)
+  const catTotals = {}, catWedding = {}, catEngagement = {};
+  S.expenses.forEach(e => {
+    catTotals[e.category]    = (catTotals[e.category]    || 0) + e.amount;
+    if(e.event === 'engagement') catEngagement[e.category] = (catEngagement[e.category] || 0) + e.amount;
+    else catWedding[e.category] = (catWedding[e.category] || 0) + e.amount;
+  });
+  const catE = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 12);
   const pieLabels = catE.map(([id]) => getCat(id).emoji + ' ' + getCat(id).name);
   const pieData   = catE.map(([, v]) => v);
   const pieColors = catE.map(([id]) => getCat(id).color);
+  // Stacked data
+  const stackWedding    = catE.map(([id]) => catWedding[id]    || 0);
+  const stackEngagement = catE.map(([id]) => catEngagement[id] || 0);
 
   // ② Monthly savings — bar
   const mMap = {};
@@ -844,7 +880,14 @@ function renderHome() {
     <!-- DESKTOP CHARTS 2-COL -->
     <div class="desk-2col">
       ${lineLabels.length>1?`<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-wrap h200"><canvas id="line-chart"></canvas></div></div>`:`<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-empty">Add savings &amp; expenses to see trend</div></div>`}
-      ${pieData.length?`<div class="card"><div class="card-t">Expense by Category</div><div class="chart-wrap" style="height:${pieData.length*38+40}px"><canvas id="pie-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add expenses to see breakdown</div></div>`}
+      ${pieData.length?`<div class="card desk-span2">
+        <div class="card-t">Expense by Category</div>
+        <div style="overflow-x:auto;padding-bottom:4px">
+          <div style="min-width:${Math.max(500, pieLabels.length*80)}px;height:260px">
+            <canvas id="pie-chart"></canvas>
+          </div>
+        </div>
+      </div>`:`<div class="card desk-span2"><div class="chart-empty">Add expenses to see breakdown</div></div>`}
       ${srcData.length?`<div class="card"><div class="card-t">Savings by Source</div><div class="chart-wrap h180"><canvas id="src-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add savings to see source breakdown</div></div>`}
       ${barData.length?`<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-wrap h180"><canvas id="bar-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add monthly savings to see chart</div></div>`}
       ${(wSpent+eSpent>0)?`<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap h180"><canvas id="evt-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add events expenses to compare</div></div>`}
@@ -898,7 +941,7 @@ function renderHome() {
     if (lineLabels.length > 1) renderLineChart('line-chart', lineLabels, lineDs);
     // Desktop: horizontal bar for categories; Mobile: donut
     if (pieData.length) {
-      if (isDesktop) renderHBarChart('pie-chart', pieLabels, pieData, pieColors);
+      if (isDesktop) renderStackedBarChart('pie-chart', pieLabels, stackWedding, stackEngagement);
       else renderPieChart('pie-chart', pieLabels, pieData, pieColors);
     }
     if (srcData.length > 1) renderPieChart('src-chart', srcLabels, srcData, srcColors);
