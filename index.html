@@ -880,14 +880,14 @@ function renderHome() {
     <!-- DESKTOP CHARTS 2-COL -->
     <div class="desk-2col">
       ${lineLabels.length>1?`<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-wrap h200"><canvas id="line-chart"></canvas></div></div>`:`<div class="card desk-span2"><div class="card-t">Savings vs Spending (Cumulative)</div><div class="chart-empty">Add savings &amp; expenses to see trend</div></div>`}
-      ${pieData.length?`<div class="card desk-span2">
+      ${pieData.length?`<div class="card">
         <div class="card-t">Expense by Category</div>
         <div style="overflow-x:auto;padding-bottom:4px">
-          <div style="min-width:${Math.max(500, pieLabels.length*80)}px;height:260px">
+          <div style="min-width:${Math.max(300, pieLabels.length*70)}px;height:220px">
             <canvas id="pie-chart"></canvas>
           </div>
         </div>
-      </div>`:`<div class="card desk-span2"><div class="chart-empty">Add expenses to see breakdown</div></div>`}
+      </div>`:`<div class="card"><div class="chart-empty">Add expenses to see breakdown</div></div>`}
       ${srcData.length?`<div class="card"><div class="card-t">Savings by Source</div><div class="chart-wrap h180"><canvas id="src-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add savings to see source breakdown</div></div>`}
       ${barData.length?`<div class="card"><div class="card-t">Monthly Savings</div><div class="chart-wrap h180"><canvas id="bar-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add monthly savings to see chart</div></div>`}
       ${(wSpent+eSpent>0)?`<div class="card"><div class="card-t">Wedding vs Engagement Spend</div><div class="chart-wrap h180"><canvas id="evt-chart"></canvas></div></div>`:`<div class="card"><div class="chart-empty">Add events expenses to compare</div></div>`}
