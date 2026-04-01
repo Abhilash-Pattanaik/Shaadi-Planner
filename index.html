@@ -99,8 +99,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── Desktop layout (≥900px) ── */
 @media(min-width:900px){
-  body{overflow:hidden;height:100vh;}
-  .app-shell{max-width:100%;display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto 1fr;height:100vh;}
+  body{overflow:hidden;height:100vh;margin:0;padding:0;}
+  .app-shell{max-width:100%;display:grid;grid-template-columns:220px 1fr;grid-template-rows:auto 1fr;height:100vh;overflow:hidden;}
 
   /* Header spans full width */
   .hdr{grid-column:1/-1;grid-row:1;position:sticky;top:0;z-index:100;padding:12px 24px 10px;display:flex;align-items:center;justify-content:space-between;}
@@ -109,9 +109,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .cd-row{margin-top:0;flex-wrap:nowrap;}
   /* Hide countdown pills from their default position on desktop */
   .hdr>.cd-row{display:none;}
+  /* Hide mobile countdown row on desktop */
+  #cd-mob{display:none !important;}
 
   /* Sidebar — left column */
-  .tab-bar{position:static;transform:none;width:auto;max-width:none;flex-direction:column;border-top:none;border-right:0.5px solid var(--bor);grid-column:1;grid-row:2;padding:16px 0;height:100%;overflow-y:auto;align-items:stretch;}
+  .tab-bar{position:static !important;transform:none !important;width:auto;max-width:none;flex-direction:column;border-top:none;border-right:0.5px solid var(--bor);grid-column:1;grid-row:2;padding:16px 0;height:100%;overflow-y:auto;align-items:stretch;bottom:auto !important;}
   .tb{flex:none;flex-direction:row;justify-content:flex-start;padding:11px 20px;font-size:13px;gap:12px;border-radius:0;}
   .tb.active{color:var(--gold);background:var(--gold-l);}
   .tb:hover:not(.active){background:var(--sur2);}
@@ -122,13 +124,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   .pg{padding:24px 28px 40px;display:none;}
   .pg.active{display:block;}
 
-  /* FAB — bottom right of content */
+  /* FAB — bottom right of content area */
   .fab{position:fixed;bottom:28px;right:28px;width:54px;height:54px;}
 
   /* Toast */
   .toast{bottom:40px;}
 
-  /* Modal centered on desktop */
+  /* Hide mobile-only elements */
+  #cd-mob{display:none !important;}
   .mbd{align-items:center;}
   .modal{border-radius:16px;max-width:600px;max-height:85vh;}
 
@@ -282,7 +285,7 @@ select.fi{appearance:none;cursor:pointer;}
 .empty{text-align:center;padding:32px 20px;color:var(--text3);font-size:14px;}
 .empty-ic{font-size:32px;margin-bottom:8px;}
 /* Toast */
-.toast{position:fixed;bottom:98px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
 /* Goal banner */
 .goal-b{background:var(--gold-l);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
