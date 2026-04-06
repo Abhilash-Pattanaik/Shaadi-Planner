@@ -810,8 +810,19 @@ function renderHome() {
   const srcColors = ['#7C3AED','#A855F7','#6D28D9','#C026D3','#9333EA'];
 
   // ④ Cumulative Savings vs Spending — line
-  const allDates = [...S.savings.map(s => ({ d: s.date, v: s.amount, t: 'save' })),
-                    ...S.expenses.map(e => ({ d: e.date, v: e.amount, t: 'spend' }))]
+  const allDates = [...S.savings.map(s => {
+    // Use month field to derive a proper date for the timeline (e.g. "April 2026" → 2026-04-01)
+    let d = s.date;
+    if(s.month) {
+      const parts = String(s.month).trim().split(' ');
+      if(parts.length === 2) {
+        const mon = new Date(`${parts[0]} 1, ${parts[1]}`);
+        if(!isNaN(mon.getTime())) d = mon.toISOString().split('T')[0];
+      }
+    }
+    return { d, v: s.amount, t: 'save' };
+  }),
+  ...S.expenses.map(e => ({ d: e.date, v: e.amount, t: 'spend' }))]
     .sort((a, b) => new Date(a.d) - new Date(b.d));
   let cumSave = 0, cumSpend = 0;
   const lineLabels = [], lineSave = [], lineSpend = [];
@@ -963,7 +974,7 @@ function renderHome() {
       if (isDesktop) renderStackedBarChart('pie-chart', pieLabels, stackWedding, stackEngagement);
       else renderPieChart('pie-chart', pieLabels, pieData, pieColors);
     }
-    if (srcData.length > 1) renderPieChart('src-chart', srcLabels, srcData, srcColors);
+    if (srcData.length > 0) renderPieChart('src-chart', srcLabels, srcData, srcColors);
     if (barData.length)  renderBarChart('bar-chart', barLabels, barData);
     if (wSpent + eSpent > 0) renderHBarChart('evt-chart', evtLabels, evtData, evtColors);
   });
