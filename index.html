@@ -811,25 +811,25 @@ function renderHome() {
 
   // ④ Cumulative Savings vs Spending — line
   const allDates = [...S.savings.map(s => {
-    // Use month field to derive a proper date for the timeline (e.g. "April 2026" → 2026-04-01)
-    let d = s.date;
+    const monthLabel = cleanMonth(s.month) || fmtDate(s.date);
+    // For sorting, derive a sortable date from month (first of month)
+    let sortDate = s.date;
     if(s.month) {
       const parts = String(s.month).trim().split(' ');
       if(parts.length === 2) {
         const mon = new Date(`${parts[0]} 1, ${parts[1]}`);
-        if(!isNaN(mon.getTime())) d = mon.toISOString().split('T')[0];
+        if(!isNaN(mon.getTime())) sortDate = `${parts[1]}-${String(mon.getMonth()+1).padStart(2,'0')}-01`;
       }
     }
-    return { d, v: s.amount, t: 'save' };
+    return { d: sortDate, label: monthLabel, v: s.amount, t: 'save' };
   }),
-  ...S.expenses.map(e => ({ d: e.date, v: e.amount, t: 'spend' }))]
+  ...S.expenses.map(e => ({ d: e.date, label: fmtDate(e.date).split(' ').slice(0,2).join(' '), v: e.amount, t: 'spend' }))]
     .sort((a, b) => new Date(a.d) - new Date(b.d));
   let cumSave = 0, cumSpend = 0;
   const lineLabels = [], lineSave = [], lineSpend = [];
   allDates.forEach(item => {
     if (item.t === 'save') cumSave += item.v; else cumSpend += item.v;
-    const lbl = fmtDate(item.d).split(' ').slice(0, 2).join(' ');
-    lineLabels.push(lbl); lineSave.push(cumSave); lineSpend.push(cumSpend);
+    lineLabels.push(item.label); lineSave.push(cumSave); lineSpend.push(cumSpend);
   });
   const gold  = '#8B5CF6', red = '#C026D3';
   const lineDs = [
