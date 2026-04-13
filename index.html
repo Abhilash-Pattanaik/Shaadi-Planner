@@ -291,6 +291,30 @@ select.fi{appearance:none;cursor:pointer;}
 /* Goal banner */
 .goal-b{background:var(--gold-l);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
 .goal-b-text{flex:1;font-size:13px;color:var(--gold-d);}
+/* ── Notification panel ── */
+.notif-btn{position:relative;}
+.notif-badge{position:absolute;top:-5px;right:-5px;background:var(--red);color:#fff;font-size:9px;font-weight:700;min-width:17px;height:17px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1;pointer-events:none;border:1.5px solid var(--sur);}
+.notif-panel{position:fixed;top:60px;right:12px;width:310px;max-width:calc(100vw - 24px);background:var(--sur);border:0.5px solid var(--bor);border-radius:var(--r);box-shadow:0 8px 32px rgba(0,0,0,0.18);z-index:250;max-height:420px;overflow-y:auto;display:none;}
+.notif-panel.open{display:block;}
+.notif-hdr{padding:12px 14px 8px;border-bottom:0.5px solid var(--bor);display:flex;align-items:center;justify-content:space-between;}
+.notif-hdr-t{font-family:'Playfair Display',serif;font-size:15px;color:var(--text);}
+.notif-empty{padding:24px 14px;text-align:center;font-size:13px;color:var(--text3);}
+.notif-item{padding:10px 14px;border-bottom:0.5px solid var(--bor);display:flex;align-items:flex-start;gap:10px;}
+.notif-item:last-child{border-bottom:none;}
+.notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.notif-dot.overdue{background:var(--red);}
+.notif-dot.soon{background:var(--gold);}
+.notif-dot.upcoming{background:var(--blue);}
+.notif-body{flex:1;min-width:0;}
+.notif-title{font-size:13px;font-weight:500;color:var(--text);}
+.notif-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.notif-done-btn{font-size:11px;padding:3px 8px;background:var(--sur2);border:0.5px solid var(--bor);border-radius:var(--rs);cursor:pointer;color:var(--text2);white-space:nowrap;}
+/* ── Readonly mode ── */
+.readonly-banner{background:linear-gradient(90deg,var(--gold-l),var(--blue-l));color:var(--gold-d);text-align:center;padding:8px 16px;font-size:12px;font-weight:500;border-bottom:0.5px solid var(--bor);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;position:sticky;top:56px;z-index:99;}
+@media(min-width:900px){.readonly-banner{grid-column:1/-1;top:54px;}}
+body.readonly-mode .fab{display:none!important;}
+body.readonly-mode .btn-ic{display:none!important;}
+body.readonly-mode [data-edit]{display:none!important;}
 /* Desktop table */
 .dt{width:100%;border-collapse:collapse;font-size:13px;}
 .dt th{text-align:left;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3);padding:8px 12px;border-bottom:0.5px solid var(--bor);background:var(--sur2);}
@@ -306,6 +330,9 @@ select.fi{appearance:none;cursor:pointer;}
 <body>
 <div class="app-shell">
 
+<!-- Notification panel -->
+<div class="notif-panel" id="notif-panel"></div>
+
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-title serif">Shaadi Planner 💍</div>
@@ -316,6 +343,7 @@ select.fi{appearance:none;cursor:pointer;}
     </div>
     <!-- Always: theme + sync buttons on far right -->
     <div class="hdr-act">
+      <div class="icon-btn notif-btn" id="notif-btn" onclick="toggleNotifPanel()" title="Notifications">🔔<span class="notif-badge" id="notif-badge" style="display:none">0</span></div>
       <div class="icon-btn" id="theme-btn" onclick="cycleTheme()" title="Toggle theme">✨</div>
       <div class="icon-btn" id="sync-btn" onclick="manualSync()" title="Sync"><span id="sync-ic">☁️</span></div>
     </div>
@@ -325,6 +353,9 @@ select.fi{appearance:none;cursor:pointer;}
     <div class="cd-pill" id="cd-w">💒 Loading...</div>
     <div class="cd-pill" id="cd-e">💍 Loading...</div>
   </div>
+</div>
+<div id="readonly-banner" class="readonly-banner" style="display:none">
+  👁️ <strong>View-only mode</strong> — You can browse but not edit this planner.
 </div>
 
 <div class="tab-bar" id="tab-bar">
@@ -438,6 +469,7 @@ async function saveS() {
     S.goal    = Number(S.goal)    || 0;
     S.engGoal = Number(S.engGoal) || 0;
     localStorage.setItem('shaadi_v3', JSON.stringify(S));
+    updateNotifBadge();
   } catch(e) { console.warn('saveS error:', e); }
 }
 
@@ -1147,6 +1179,7 @@ function renderTaskList() {
 function filterTasks(val){ taskSearch=val; renderTaskList(); }
 function setTaskF(f){ taskFilter=f; taskSearch=''; renderTasks(); }
 async function toggleTask(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
   const t=S.tasks.find(t=>t.id===id); if(!t) return;
   t.done=!t.done; await saveS(); renderTaskList();
   if(t.done) showToast('✅ Task marked complete!');
@@ -1303,6 +1336,7 @@ function callVendor(phone){
   try{window.open('tel:'+phone);}catch(e){}
 }
 async function cycleVendorStatus(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
   const v=S.vendors.find(v=>v.id===id); if(!v) return;
   const order=VENDOR_STATUSES.map(s=>s.id);
   v.status=order[(order.indexOf(v.status)+1)%order.length];
@@ -1312,7 +1346,7 @@ async function delVendor(id){
   if(!confirm('Delete this vendor?')) return;
   S.vendors=S.vendors.filter(v=>v.id!==id); await saveS(); renderVendorList();
 }
-function editVendor(id){openVendorModal(id);}
+function editVendor(id){if(IS_READONLY){showToast('👁️ View-only mode');return;}openVendorModal(id);}
 
 // ── Guests Tab ─────────────────────────────────────────
 let guestEvFilter='wedding', guestSearch='';
@@ -1408,6 +1442,7 @@ function filterGuests(val){
 function setGuestEv(ev){ guestEvFilter=ev; guestSearch=''; renderGuests(); }
 
 async function toggleInvite(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
   const g=S.guests.find(g=>g.id===id); if(!g) return;
   g.invited=!g.invited; await saveS(); renderGuestList();
   showToast(g.invited?'✉️ Marked as invited!':'Invite marked pending');
@@ -1584,6 +1619,30 @@ function doGet(e){
     </div>
 
     <div class="card">
+      <div class="card-t">Share / Read-only Access 🔗</div>
+      <div class="set-row">
+        <div class="set-info">
+          <div class="set-t">Read-only Link</div>
+          <div class="set-d">Share a link (same device/browser) — viewer can browse but not edit</div>
+        </div>
+        <button class="btn-sm" data-edit onclick="copyReadonlyLink()">Copy Link</button>
+      </div>
+      <div class="set-row">
+        <div class="set-info">
+          <div class="set-t">Download Shareable File</div>
+          <div class="set-d">Exports a standalone HTML with your data baked in — share the file with anyone</div>
+        </div>
+        <button class="btn-sm" data-edit onclick="downloadReadonlyHTML()">Download</button>
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;background:var(--sur2);border-radius:var(--rs);border-left:2px solid var(--gold)">
+        <div style="font-size:11px;color:var(--text3);line-height:1.6">
+          💡 <strong>Read-only Link</strong> works only when opened on the same browser/device.<br>
+          💡 <strong>Shareable File</strong> works for anyone — it has your current data embedded and is locked to view-only.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-t">Google Sheets Sync ☁️</div>
       <div class="set-row">
         <div class="set-info"><div class="set-t">Status</div><div class="set-d">${S.lastSync?'Last synced: '+fmtDate(S.lastSync):'Never synced'}</div></div>
@@ -1686,6 +1745,7 @@ function closeM(){
 function mClickOut(e){ if(e.target.id==='modal') closeM(); }
 
 function openAddModal(){
+  if(IS_READONLY){showToast('👁️ View-only mode — editing disabled');return;}
   const isDesktop = window.innerWidth >= 900;
 
   if(isDesktop){
@@ -2073,6 +2133,142 @@ async function delExpense(id){
   await saveS(); renderTab();
 }
 
+// ── Read-only mode ─────────────────────────────────────
+const IS_READONLY = new URLSearchParams(window.location.search).get('readonly') === '1'
+  || new URLSearchParams(window.location.search).get('view') === '1';
+
+function applyReadonlyMode() {
+  if (!IS_READONLY) return;
+  document.body.classList.add('readonly-mode');
+  const banner = document.getElementById('readonly-banner');
+  if (banner) banner.style.display = 'flex';
+  // Hide sync button in readonly
+  const syncBtn = document.getElementById('sync-btn');
+  if (syncBtn) syncBtn.style.display = 'none';
+  // Change notif bell title
+  const notifBtn = document.getElementById('notif-btn');
+  if (notifBtn) notifBtn.title = 'View upcoming tasks';
+}
+
+// ── Notification service ───────────────────────────────
+function getUpcomingTasks() {
+  const now   = new Date(); now.setHours(0,0,0,0);
+  const week  = new Date(now); week.setDate(now.getDate() + 7);
+  const tasks = S.tasks.filter(t => !t.done && t.dueDate);
+  return tasks.map(t => {
+    const due = new Date(t.dueDate); due.setHours(0,0,0,0);
+    const diff = Math.round((due - now) / 86400000);
+    let urgency = 'upcoming';
+    if (diff < 0)       urgency = 'overdue';
+    else if (diff <= 3) urgency = 'soon';
+    return { ...t, diff, urgency, due };
+  }).filter(t => t.diff <= 7)
+    .sort((a, b) => a.diff - b.diff);
+}
+
+function updateNotifBadge() {
+  const count = getUpcomingTasks().length;
+  const badge = document.getElementById('notif-badge');
+  if (!badge) return;
+  if (count > 0) {
+    badge.textContent = count > 9 ? '9+' : count;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+let notifOpen = false;
+function toggleNotifPanel() {
+  notifOpen = !notifOpen;
+  renderNotifPanel();
+  const panel = document.getElementById('notif-panel');
+  if (panel) panel.classList.toggle('open', notifOpen);
+  // Close on outside click
+  if (notifOpen) {
+    setTimeout(() => {
+      document.addEventListener('click', closeNotifOnOutside, { once: true });
+    }, 10);
+  }
+}
+
+function closeNotifOnOutside(e) {
+  const panel = document.getElementById('notif-panel');
+  const btn   = document.getElementById('notif-btn');
+  if (panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
+    notifOpen = false;
+    panel.classList.remove('open');
+  }
+}
+
+function renderNotifPanel() {
+  const panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  const tasks = getUpcomingTasks();
+
+  const itemsHTML = tasks.length === 0
+    ? `<div class="notif-empty">🎉<br>No upcoming tasks this week!<br><span style="font-size:11px">All caught up</span></div>`
+    : tasks.map(t => {
+        const dueLabel = t.diff < 0    ? `Overdue by ${Math.abs(t.diff)} day${Math.abs(t.diff)!==1?'s':''}` :
+                         t.diff === 0  ? 'Due today' :
+                         t.diff === 1  ? 'Due tomorrow' :
+                         `Due in ${t.diff} days · ${fmtDate(t.dueDate)}`;
+        const eventBadge = t.event === 'engagement' ? '💍' : '💒';
+        return `<div class="notif-item">
+          <div class="notif-dot ${t.urgency}"></div>
+          <div class="notif-body">
+            <div class="notif-title">${t.title}</div>
+            <div class="notif-sub">${eventBadge} ${t.category} · ${dueLabel}</div>
+          </div>
+          ${!IS_READONLY ? `<button class="notif-done-btn" onclick="notifMarkDone('${t.id}')">✓ Done</button>` : ''}
+        </div>`;
+      }).join('');
+
+  panel.innerHTML = `
+    <div class="notif-hdr">
+      <div class="notif-hdr-t">🔔 Upcoming Tasks</div>
+      <div style="font-size:11px;color:var(--text3)">${tasks.length} this week</div>
+    </div>
+    ${itemsHTML}
+    ${tasks.length > 0 ? `<div style="padding:10px 14px;border-top:0.5px solid var(--bor)"><button class="btn-sm sec" style="width:100%" onclick="goTab('tasks');toggleNotifPanel()">View All Tasks →</button></div>` : ''}
+  `;
+}
+
+async function notifMarkDone(id) {
+  const t = S.tasks.find(t => t.id === id); if (!t) return;
+  t.done = true;
+  await saveS();
+  updateNotifBadge();
+  renderNotifPanel();
+  showToast('✅ Task marked complete!');
+  if (curTab === 'tasks') renderTaskList();
+}
+
+// ── Readonly share utilities ────────────────────────────
+function copyReadonlyLink() {
+  const base = window.location.href.split('?')[0].split('#')[0];
+  const link = base + '?readonly=1';
+  navigator.clipboard.writeText(link)
+    .then(()  => showToast('🔗 Read-only link copied!'))
+    .catch(()  => { prompt('Copy this link:', link); });
+}
+
+function downloadReadonlyHTML() {
+  const seedScript = `\n<script>\n(function(){\n  try{\n    var _d=${JSON.stringify(S).replace(/<\/script>/gi,'<\\/script>')};\n    localStorage.setItem('shaadi_v3', JSON.stringify(_d));\n  }catch(e){}\n  window.__FORCE_READONLY = true;\n})();\n<\/script>\n`;
+  let out = document.documentElement.outerHTML;
+  out = out.replace('<head>', '<head>' + seedScript);
+  out = out.replace(
+    "const IS_READONLY = new URLSearchParams(window.location.search).get('readonly') === '1'",
+    "const IS_READONLY = window.__FORCE_READONLY || new URLSearchParams(window.location.search).get('readonly') === '1'"
+  );
+  const blob = new Blob([out], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'shaadi_planner_readonly.html';
+  a.click();
+  showToast('📤 Read-only file downloaded! Share this file.');
+}
+
 // ── Init ───────────────────────────────────────────────
 async function init(){
   await loadS();
@@ -2097,6 +2293,17 @@ async function init(){
   applyTheme(S.theme);
   updateCDs(); setInterval(updateCDs,60000);
   updateSyncIcon();
+  applyReadonlyMode();
+  updateNotifBadge();
+
+  // Auto-pull from Sheets if readonly mode and Sheets URL is set
+  if(IS_READONLY && S.sheetsUrl){
+    showToast('⏳ Loading latest data...');
+    await pullFromSheets(true);
+  } else if(IS_READONLY && !S.sheetsUrl){
+    showToast('⚠️ Google Sheets not connected — showing cached data');
+  }
+
   renderTab();
 }
 init();
