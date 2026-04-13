@@ -2297,18 +2297,54 @@ async function init(){
   applyReadonlyMode();
   updateNotifBadge();
 
-  // In readonly mode, pick up sheetsUrl from URL param if not in localStorage
-  if(IS_READONLY && !S.sheetsUrl){
+  // ── Readonly mode: auto-pull from Sheets ──────────────
+  if(IS_READONLY){
+    // 1. Try URL param first (?sheets=...)
     const urlSheets = new URLSearchParams(window.location.search).get('sheets');
-    if(urlSheets) S.sheetsUrl = decodeURIComponent(urlSheets);
-  }
+    if(urlSheets && !S.sheetsUrl) S.sheetsUrl = decodeURIComponent(urlSheets);
 
-  // Auto-pull from Sheets if readonly mode and Sheets URL is set
-  if(IS_READONLY && S.sheetsUrl){
-    showToast('⏳ Loading latest data...');
-    await pullFromSheets(true);
-  } else if(IS_READONLY && !S.sheetsUrl){
-    showToast('⚠️ Google Sheets not connected — showing cached data');
+    if(S.sheetsUrl){
+      // Show loading overlay
+      document.body.insertAdjacentHTML('beforeend',
+        `<div id="ro-loader" style="position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+          <div style="font-size:36px">💍</div>
+          <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--gold)">Loading Shaadi Planner…</div>
+          <div style="font-size:13px;color:var(--text3)">Fetching latest data</div>
+        </div>`);
+      try {
+        const resp = await fetch(S.sheetsUrl + '?action=pull');
+        if(!resp.ok) throw new Error('http '+resp.status);
+        const data = await resp.json();
+        if(!data) throw new Error('empty response');
+        if(data.savings)     S.savings     = data.savings.map(s=>({...s,month:cleanMonth(s.month)}));
+        if(data.expenses)    S.expenses    = data.expenses;
+        if(data.vendors)     S.vendors     = data.vendors;
+        if(data.tasks)       S.tasks       = data.tasks;
+        if(data.guests)      S.guests      = data.guests;
+        if(data.customCats)  S.customCats  = data.customCats;
+        if(data.goal     !== undefined) S.goal    = Number(data.goal)    || 0;
+        if(data.engGoal  !== undefined) S.engGoal = Number(data.engGoal) || 0;
+        if(data.weddingDate)    S.weddingDate    = data.weddingDate;
+        if(data.engagementDate) S.engagementDate = data.engagementDate;
+        localStorage.setItem('shaadi_v3', JSON.stringify(S));
+      } catch(err) {
+        console.error('Readonly pull failed:', err);
+        showToast('⚠️ Could not fetch latest data — showing last cached version');
+      }
+      const loader = document.getElementById('ro-loader');
+      if(loader) loader.remove();
+    } else {
+      // No sheets URL at all — show one-time setup prompt
+      const entered = prompt('Enter your Google Sheets App URL to load data:');
+      if(entered && entered.startsWith('https://')){
+        S.sheetsUrl = entered.trim();
+        localStorage.setItem('shaadi_v3', JSON.stringify(S));
+        location.reload();
+        return;
+      } else {
+        showToast('⚠️ No data source — showing empty planner');
+      }
+    }
   }
 
   renderTab();
