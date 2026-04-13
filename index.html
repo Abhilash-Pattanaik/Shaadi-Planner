@@ -1558,7 +1558,39 @@ function doGet(e){
   return ContentService.createTextOutput('ok');
 }`;
 
-  const catChips=allCats().map(c=>`<div class="cat-chip">${c.emoji} ${c.name}${c.custom?`<span class="del" onclick="deleteCat('${c.id}')">✕</span>`:''}</div>`).join('');
+  // In readonly mode — show minimal settings, no edit actions
+  if(IS_READONLY){
+    document.getElementById('pg-settings').innerHTML=`
+      <div class="card">
+        <div class="card-t">View-only Mode 👁️</div>
+        <div style="padding:8px 0;font-size:13px;color:var(--text2);line-height:1.7">
+          You are viewing this planner in <strong>read-only mode</strong>.<br>
+          All data is live from Google Sheets.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-t">Event Dates</div>
+        <div class="set-row"><div class="set-info"><div class="set-t">💒 Wedding Date</div><div class="set-d">${getWeddingDate().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} · ${daysLeft(getWeddingDate())} days left</div></div></div>
+        <div class="set-row" style="border:none"><div class="set-info"><div class="set-t">💍 Engagement Date</div><div class="set-d">${getEngagementDate().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})} · ${daysLeft(getEngagementDate())} days left</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Budget Goals</div>
+        <div class="set-row"><div class="set-info"><div class="set-t">Wedding Budget</div><div class="set-d">${S.goal?fmt(S.goal):'Not set'}</div></div></div>
+        <div class="set-row" style="border:none"><div class="set-info"><div class="set-t">Engagement Budget</div><div class="set-d">${S.engGoal?fmt(S.engGoal):'Not set'}</div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-t">Appearance</div>
+        <div class="set-row" style="border:none">
+          <div class="set-info"><div class="set-t">Theme</div><div class="set-d">Currently: ${S.theme==='auto'?'System default':S.theme==='dark'?'Dark mode':'Light mode'}</div></div>
+          <div class="theme-toggle">
+            <button class="theme-opt ${S.theme==='auto'?'active':''}" onclick="setTheme('auto')">Auto</button>
+            <button class="theme-opt ${S.theme==='light'?'active':''}" onclick="setTheme('light')">☀️</button>
+            <button class="theme-opt ${S.theme==='dark'?'active':''}" onclick="setTheme('dark')">🌙</button>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
 
   document.getElementById('pg-settings').innerHTML=`
     <div class="card">
