@@ -477,7 +477,8 @@ function cycleTheme() {
   const order=['auto','light','dark'];
   S.theme=order[(order.indexOf(S.theme||'auto')+1)%3];
   applyTheme(S.theme); saveS();
-  if(curTab==='settings') renderSettings();
+  // Re-render current tab so gauge chart picks up new theme colors
+  renderTab();
 }
 
 // ── Countdowns ─────────────────────────────────────────
@@ -1072,7 +1073,7 @@ function setMEv(e){mEvent=e;renderMoney();}
 function setMCat(f){mCatF=f;renderMoney();}
 
 // ── Tasks Tab ──────────────────────────────────────────
-let taskFilter='all'; // all | wedding | engagement | done
+let taskFilter='all', taskSearch=''; // all | wedding | engagement | done
 
 function renderTasks() {
   const fToggle=`<div class="tog-wrap">
@@ -1081,15 +1082,37 @@ function renderTasks() {
     <div class="tog-opt ${taskFilter==='engagement'?'active':''}" onclick="setTaskF('engagement')">💍 Engagement</div>
     <div class="tog-opt ${taskFilter==='done'?'active':''}" onclick="setTaskF('done')">✅ Done</div>
   </div>`;
+
+  const pending=S.tasks.filter(t=>!t.done).length;
+  const done=S.tasks.filter(t=>t.done).length;
+  const isDesktop = window.innerWidth >= 900;
+
+  document.getElementById('pg-tasks').innerHTML=`
+    <div class="sg">
+      <div class="sc"><div class="sl">Remaining</div><div class="sv r">${pending}</div></div>
+      <div class="sc"><div class="sl">Completed</div><div class="sv g">${done}</div></div>
+    </div>
+    ${fToggle}
+    <input class="search-bar" type="text" id="task-search-input" placeholder="Search tasks..." value="${taskSearch.replace(/"/g,'&quot;')}" oninput="filterTasks(this.value)" style="margin-bottom:10px">
+    <div id="task-list-wrap"></div>`;
+
+  renderTaskList();
+
+  const inp=document.getElementById('task-search-input');
+  if(inp&&taskSearch){inp.focus();const l=inp.value.length;inp.setSelectionRange(l,l);}
+}
+
+function renderTaskList() {
   let tasks=S.tasks;
   if(taskFilter==='done') tasks=tasks.filter(t=>t.done);
   else if(taskFilter!=='all') tasks=tasks.filter(t=>t.event===taskFilter&&!t.done);
   else tasks=tasks.filter(t=>!t.done);
-
-  const pending=S.tasks.filter(t=>!t.done).length;
-  const done=S.tasks.filter(t=>t.done).length;
+  if(taskSearch.trim()) tasks=tasks.filter(t=>t.title.toLowerCase().includes(taskSearch.toLowerCase())||t.category.toLowerCase().includes(taskSearch.toLowerCase()));
 
   const isDesktop = window.innerWidth >= 900;
+  const wrap = document.getElementById('task-list-wrap');
+  if(!wrap) return;
+
   const items = isDesktop ?
     `<div class="dt-wrap"><table class="dt">
       <thead><tr><th style="width:32px"></th><th>Task</th><th>Category</th><th>Event</th><th>Due Date</th><th style="width:40px"></th></tr></thead>
@@ -1100,47 +1123,52 @@ function renderTasks() {
         <td><span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span></td>
         <td style="color:var(--text3);font-size:12px">${t.dueDate?fmtDate(t.dueDate):'—'}</td>
         <td><button class="btn-ic" onclick="delTask('${t.id}')">✕</button></td>
-      </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No tasks. Click + to add.</td></tr>`}
+      </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No tasks found.</td></tr>`}
       </tbody></table></div>`
     :
-    tasks.map(t=>`<div class="task-item">
-      <div class="task-cb ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
-      <div class="task-info">
-        <div class="task-title ${t.done?'done':''}">${t.title}</div>
-        <div class="task-meta">
-          <span>${t.category}</span>
-          <span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span>
-          ${t.dueDate?`<span>📅 ${fmtDate(t.dueDate)}</span>`:''}
+    `<div class="card"><div class="card-t">${taskFilter==='done'?'Completed':'Pending'} Tasks (${tasks.length})</div>${
+      tasks.map(t=>`<div class="task-item">
+        <div class="task-cb ${t.done?'done':''}" onclick="toggleTask('${t.id}')">${t.done?'✓':''}</div>
+        <div class="task-info">
+          <div class="task-title ${t.done?'done':''}">${t.title}</div>
+          <div class="task-meta">
+            <span>${t.category}</span>
+            <span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span>
+            ${t.dueDate?`<span>📅 ${fmtDate(t.dueDate)}</span>`:''}
+          </div>
         </div>
-      </div>
-      <button class="btn-ic" onclick="delTask('${t.id}')">✕</button>
-    </div>`).join('') || '<div class="empty"><div class="empty-ic">🎉</div>All done! Tap + to add more.</div>';
+        <button class="btn-ic" onclick="delTask('${t.id}')">✕</button>
+      </div>`).join('') || '<div class="empty"><div class="empty-ic">🎉</div>No tasks found.</div>'
+    }</div>`;
 
-  document.getElementById('pg-tasks').innerHTML=`
-    <div class="sg">
-      <div class="sc"><div class="sl">Remaining</div><div class="sv r">${pending}</div></div>
-      <div class="sc"><div class="sl">Completed</div><div class="sv g">${done}</div></div>
-    </div>
-    ${fToggle}
-    ${isDesktop ? items : `<div class="card"><div class="card-t">${taskFilter==='done'?'Completed':'Pending'} Tasks (${tasks.length})</div>${items}</div>`}`;
+  wrap.innerHTML = items;
 }
-function setTaskF(f){taskFilter=f;renderTasks();}
+
+function filterTasks(val){ taskSearch=val; renderTaskList(); }
+function setTaskF(f){ taskFilter=f; taskSearch=''; renderTasks(); }
 async function toggleTask(id){
   const t=S.tasks.find(t=>t.id===id); if(!t) return;
-  t.done=!t.done; await saveS(); renderTasks();
+  t.done=!t.done; await saveS(); renderTaskList();
   if(t.done) showToast('✅ Task marked complete!');
 }
 async function delTask(id){
   if(!confirm('Delete this task?')) return;
-  S.tasks=S.tasks.filter(t=>t.id!==id); await saveS(); renderTasks();
+  S.tasks=S.tasks.filter(t=>t.id!==id); await saveS(); renderTaskList();
 }
 
 // ── Vendors Tab ────────────────────────────────────────
+let vendorSearch='', vendorFilter='all';
+
 function renderVendors() {
   const totalCommitted=S.vendors.reduce((a,v)=>a+(v.totalAmount||0),0);
   const totalPaid=S.vendors.reduce((a,v)=>a+(v.paidAmount||0),0);
   const totalBalance=totalCommitted-totalPaid;
   const isDesktop=window.innerWidth>=900;
+
+  // Apply search + filter
+  let vendors=S.vendors;
+  if(vendorFilter!=='all') vendors=vendors.filter(v=>v.status===vendorFilter);
+  if(vendorSearch.trim()) vendors=vendors.filter(v=>v.name.toLowerCase().includes(vendorSearch.toLowerCase())||getCat(v.category).name.toLowerCase().includes(vendorSearch.toLowerCase()));
 
   const statsHtml=`<div class="sg" style="margin-bottom:12px">
     <div class="sc"><div class="sl">Total Committed</div><div class="sv o">${fmt(totalCommitted)}</div></div>
@@ -1149,8 +1177,15 @@ function renderVendors() {
     <div class="sc"><div class="sl">Vendors</div><div class="sv">${S.vendors.length}</div></div>
   </div>`;
 
+  const statusOpts=['all','shortlisted','booked','advance_paid','fully_paid','cancelled'];
+  const statusLabels={'all':'All','shortlisted':'Shortlisted','booked':'Booked','advance_paid':'Advance Paid','fully_paid':'Fully Paid','cancelled':'Cancelled'};
+  const filterBar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+    <input class="search-bar" type="text" placeholder="Search vendor..." value="${vendorSearch.replace(/"/g,'&quot;')}" oninput="filterVendors(this.value)" style="flex:1;min-width:160px;margin-bottom:0">
+    <div class="pills" style="margin:0;flex-wrap:nowrap;overflow-x:auto">${statusOpts.map(s=>`<div class="pill ${vendorFilter===s?'active':''}" onclick="setVendorFilter('${s}')">${statusLabels[s]}</div>`).join('')}</div>
+  </div>`;
+
   if(isDesktop){
-    const rows=S.vendors.map(v=>{
+    const rows=vendors.map(v=>{
       const cat=getCat(v.category);
       const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
       const bal=(v.totalAmount||0)-(v.paidAmount||0);
@@ -1165,13 +1200,13 @@ function renderVendors() {
         <td><button class="btn-sm sec" onclick="editVendor('${v.id}')" style="font-size:11px">Edit</button></td>
         <td><button class="btn-ic" onclick="delVendor('${v.id}')">✕</button></td>
       </tr>`;}).join('');
-    document.getElementById('pg-vendors').innerHTML=`${statsHtml}
-      <div class="dt-wrap"><table class="dt">
+    document.getElementById('pg-vendors').innerHTML=`${statsHtml}${filterBar}
+      <div id="vendor-list-wrap"><div class="dt-wrap"><table class="dt">
         <thead><tr><th>Vendor</th><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">Paid</th><th style="text-align:right">Balance</th><th>Status</th><th></th><th></th><th></th></tr></thead>
-        <tbody>${rows||`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No vendors yet. Click + to add.</td></tr>`}</tbody>
-      </table></div>`;
+        <tbody>${rows||`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No vendors found.</td></tr>`}</tbody>
+      </table></div></div>`;
   } else {
-    const cards=S.vendors.map(v=>{
+    const cards=vendors.map(v=>{
       const cat=getCat(v.category);
       const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
       return `<div class="vendor-card">
@@ -1194,9 +1229,73 @@ function renderVendors() {
           </div>
         </div>
       </div>`;}).join('');
-    document.getElementById('pg-vendors').innerHTML=`${statsHtml}
-      ${cards||'<div class="empty"><div class="empty-ic">🤝</div>No vendors yet.<br>Tap + to add.</div>'}`;
+    document.getElementById('pg-vendors').innerHTML=`${statsHtml}${filterBar}
+      <div id="vendor-list-wrap">${cards||'<div class="empty"><div class="empty-ic">🤝</div>No vendors found.</div>'}</div>`;
   }
+}
+
+function filterVendors(val){ vendorSearch=val; renderVendorList(); }
+function setVendorFilter(f){ vendorFilter=f; vendorSearch=''; renderVendors(); }
+
+function renderVendorList(){
+  // Re-render only the list portion without touching search input
+  const isDesktop=window.innerWidth>=900;
+  let vendors=S.vendors;
+  if(vendorFilter!=='all') vendors=vendors.filter(v=>v.status===vendorFilter);
+  if(vendorSearch.trim()) vendors=vendors.filter(v=>v.name.toLowerCase().includes(vendorSearch.toLowerCase())||getCat(v.category).name.toLowerCase().includes(vendorSearch.toLowerCase()));
+
+  const listWrap=document.getElementById('vendor-list-wrap');
+  if(!listWrap){ renderVendors(); return; }
+
+  if(isDesktop){
+    const rows=vendors.map(v=>{
+      const cat=getCat(v.category);
+      const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
+      const bal=(v.totalAmount||0)-(v.paidAmount||0);
+      return `<tr>
+        <td><span style="font-size:18px">${cat.emoji}</span> <strong>${v.name}</strong>${v.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${v.notes}</div>`:''}</td>
+        <td style="color:var(--text3)">${cat.name}</td>
+        <td style="text-align:right">${fmt(v.totalAmount||0)}</td>
+        <td style="text-align:right;color:var(--green)">${fmt(v.paidAmount||0)}</td>
+        <td style="text-align:right;color:${bal>0?'var(--red)':'var(--text3)'}">${fmt(bal)}</td>
+        <td><span class="badge ${st.cls}" style="cursor:pointer;white-space:nowrap" onclick="cycleVendorStatus('${v.id}')">${st.label}</span></td>
+        <td>${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')" style="font-size:11px">📞</button>`:''}</td>
+        <td><button class="btn-sm sec" onclick="editVendor('${v.id}')" style="font-size:11px">Edit</button></td>
+        <td><button class="btn-ic" onclick="delVendor('${v.id}')">✕</button></td>
+      </tr>`;}).join('');
+    listWrap.innerHTML=`<div class="dt-wrap"><table class="dt">
+      <thead><tr><th>Vendor</th><th>Category</th><th style="text-align:right">Total</th><th style="text-align:right">Paid</th><th style="text-align:right">Balance</th><th>Status</th><th></th><th></th><th></th></tr></thead>
+      <tbody>${rows||`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text3)">No vendors found.</td></tr>`}</tbody>
+    </table></div>`;
+  } else {
+    const cards=vendors.map(v=>{
+      const cat=getCat(v.category);
+      const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
+      return `<div class="vendor-card">
+        <div class="vendor-top">
+          <div><div style="display:flex;align-items:center;gap:8px">
+            <div style="font-size:18px">${cat.emoji}</div>
+            <div><div class="vendor-name">${v.name}</div><div class="vendor-cat">${cat.name}</div></div>
+          </div></div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <span class="badge ${st.cls}" style="cursor:pointer" onclick="cycleVendorStatus('${v.id}')">${st.label}</span>
+            <button class="btn-ic" onclick="delVendor('${v.id}')">✕</button>
+          </div>
+        </div>
+        ${v.notes?`<div style="font-size:12px;color:var(--text3);margin-top:8px">${v.notes}</div>`:''}
+        <div class="vendor-bottom">
+          <div class="vendor-amt"><span style="color:var(--text3);font-size:12px">Total: </span><strong>${fmt(v.totalAmount||0)}</strong>${v.paidAmount?` · <span style="color:var(--green);font-size:12px">Paid: ${fmt(v.paidAmount)}</span>`:''}</div>
+          <div class="vendor-actions">
+            ${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')">📞 Call</button>`:''}
+            <button class="btn-sm sec" onclick="editVendor('${v.id}')">Edit</button>
+          </div>
+        </div>
+      </div>`;}).join('');
+    listWrap.innerHTML=cards||'<div class="empty"><div class="empty-ic">🤝</div>No vendors found.</div>';
+  }
+  // Restore search focus
+  const inp=document.querySelector('#pg-vendors .search-bar');
+  if(inp&&vendorSearch){inp.focus();const l=inp.value.length;inp.setSelectionRange(l,l);}
 }
 
 function callVendor(phone){
@@ -1207,11 +1306,11 @@ async function cycleVendorStatus(id){
   const v=S.vendors.find(v=>v.id===id); if(!v) return;
   const order=VENDOR_STATUSES.map(s=>s.id);
   v.status=order[(order.indexOf(v.status)+1)%order.length];
-  await saveS(); renderVendors(); showToast('Status updated: '+VENDOR_STATUSES.find(s=>s.id===v.status).label);
+  await saveS(); renderVendorList(); showToast('Status updated: '+VENDOR_STATUSES.find(s=>s.id===v.status).label);
 }
 async function delVendor(id){
   if(!confirm('Delete this vendor?')) return;
-  S.vendors=S.vendors.filter(v=>v.id!==id); await saveS(); renderVendors();
+  S.vendors=S.vendors.filter(v=>v.id!==id); await saveS(); renderVendorList();
 }
 function editVendor(id){openVendorModal(id);}
 
