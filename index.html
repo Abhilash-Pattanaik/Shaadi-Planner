@@ -2247,7 +2247,8 @@ async function notifMarkDone(id) {
 // ── Readonly share utilities ────────────────────────────
 function copyReadonlyLink() {
   const base = window.location.href.split('?')[0].split('#')[0];
-  const link = base + '?readonly=1';
+  const sheetsParam = S.sheetsUrl ? '&sheets=' + encodeURIComponent(S.sheetsUrl) : '';
+  const link = base + '?readonly=1' + sheetsParam;
   navigator.clipboard.writeText(link)
     .then(()  => showToast('🔗 Read-only link copied!'))
     .catch(()  => { prompt('Copy this link:', link); });
@@ -2295,6 +2296,12 @@ async function init(){
   updateSyncIcon();
   applyReadonlyMode();
   updateNotifBadge();
+
+  // In readonly mode, pick up sheetsUrl from URL param if not in localStorage
+  if(IS_READONLY && !S.sheetsUrl){
+    const urlSheets = new URLSearchParams(window.location.search).get('sheets');
+    if(urlSheets) S.sheetsUrl = decodeURIComponent(urlSheets);
+  }
 
   // Auto-pull from Sheets if readonly mode and Sheets URL is set
   if(IS_READONLY && S.sheetsUrl){
