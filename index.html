@@ -72,9 +72,11 @@ html[data-theme="dark"]{
   --sh:0 2px 16px rgba(0,0,0,0.4);
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html{background:var(--sur);height:100%;}
-body{font-family:'DM Sans',sans-serif;background:var(--sur);color:var(--text);min-height:100vh;}
-@media(min-width:900px){html{background:var(--bg);}}
+html{background:var(--bg);height:100%;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+/* Fill safe-area below tab bar with same surface color — kills the black strip */
+body::before{content:'';position:fixed;bottom:0;left:0;right:0;height:calc(env(safe-area-inset-bottom,0px) + 58px);background:var(--sur);z-index:98;pointer-events:none;}
+@media(min-width:900px){body::before{display:none;}}
 
 .serif{font-family:'Playfair Display',serif;}
 
@@ -91,7 +93,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sur);color:var(--text);mi
 .cd-pill{background:var(--gold-l);color:var(--gold-d);font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
 
 /* Tab bar — mobile bottom */
-.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -2px 12px rgba(0,0,0,0.06);}/* Extend tab bar bg below safe area */.tab-bar::after{content:'';position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:var(--sur);z-index:99;pointer-events:none;}
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
 /* Fix extra black space below tab bar on some devices */
 .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 0 7px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:9px;font-family:'DM Sans',sans-serif;transition:color 0.2s;}
 .tb.active{color:var(--gold);}
@@ -302,15 +304,21 @@ select.fi{appearance:none;cursor:pointer;}
 .notif-hdr{padding:12px 14px 8px;border-bottom:0.5px solid var(--bor);display:flex;align-items:center;justify-content:space-between;}
 .notif-hdr-t{font-family:'Playfair Display',serif;font-size:15px;color:var(--text);}
 .notif-empty{padding:24px 14px;text-align:center;font-size:13px;color:var(--text3);}
-.notif-item{padding:10px 14px;border-bottom:0.5px solid var(--bor);display:flex;align-items:flex-start;gap:10px;}
+.notif-item{padding:10px 14px;border-bottom:0.5px solid var(--bor);display:flex;align-items:flex-start;gap:10px;border-left:3px solid transparent;transition:background 0.15s;}
 .notif-item:last-child{border-bottom:none;}
+.notif-item.overdue{border-left-color:#F43F5E;background:rgba(244,63,94,0.07);}
+.notif-item.overdue .notif-title{color:#F43F5E;}
+.notif-item.today{border-left-color:#F97316;background:rgba(249,115,22,0.07);}
+.notif-item.today .notif-title{color:#F97316;}
+.notif-item.week{border-left-color:#34D399;background:rgba(52,211,153,0.06);}
+.notif-item.week .notif-title{color:#34D399;}
 .notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
-.notif-dot.overdue{background:var(--red);}
-.notif-dot.soon{background:var(--gold);}
-.notif-dot.upcoming{background:var(--blue);}
+.notif-dot.overdue{background:#F43F5E;}
+.notif-dot.today{background:#F97316;}
+.notif-dot.week{background:#34D399;}
 .notif-body{flex:1;min-width:0;}
 .notif-title{font-size:13px;font-weight:500;color:var(--text);}
-.notif-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.notif-sub{font-size:11px;color:var(--text3);margin-top:2px;opacity:0.85;}
 .notif-done-btn{font-size:11px;padding:3px 8px;background:var(--sur2);border:0.5px solid var(--bor);border-radius:var(--rs);cursor:pointer;color:var(--text2);white-space:nowrap;}
 /* ── Readonly mode ── */
 .readonly-banner{background:linear-gradient(90deg,var(--gold-l),var(--blue-l));color:var(--gold-d);text-align:center;padding:8px 16px;font-size:12px;font-weight:500;border-bottom:0.5px solid var(--bor);display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;position:sticky;top:56px;z-index:99;}
@@ -2198,9 +2206,10 @@ function getUpcomingTasks() {
   return tasks.map(t => {
     const due = new Date(t.dueDate); due.setHours(0,0,0,0);
     const diff = Math.round((due - now) / 86400000);
-    let urgency = 'upcoming';
-    if (diff < 0)       urgency = 'overdue';
-    else if (diff <= 3) urgency = 'soon';
+    let urgency = 'week';
+    if (diff < 0)        urgency = 'overdue';
+    else if (diff <= 1)  urgency = 'today';
+    else if (diff <= 7)  urgency = 'week';
     return { ...t, diff, urgency, due };
   }).filter(t => t.diff <= 7)
     .sort((a, b) => a.diff - b.diff);
@@ -2254,7 +2263,7 @@ function renderNotifPanel() {
                          t.diff === 1  ? 'Due tomorrow' :
                          `Due in ${t.diff} days · ${fmtDate(t.dueDate)}`;
         const eventBadge = t.event === 'engagement' ? '💍' : '💒';
-        return `<div class="notif-item">
+        return `<div class="notif-item ${t.urgency}">
           <div class="notif-dot ${t.urgency}"></div>
           <div class="notif-body">
             <div class="notif-title">${t.title}</div>
