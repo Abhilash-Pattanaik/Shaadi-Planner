@@ -1592,6 +1592,8 @@ function doGet(e){
     return;
   }
 
+  const catChips=allCats().map(c=>`<div class="cat-chip">${c.emoji} ${c.name}${c.custom?`<span class="del" onclick="deleteCat('${c.id}')">✕</span>`:''}</div>`).join('');
+
   document.getElementById('pg-settings').innerHTML=`
     <div class="card">
       <div class="card-t">Theme</div>
