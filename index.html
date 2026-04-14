@@ -89,7 +89,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .cd-pill{background:var(--gold-l);color:var(--gold-d);font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
 
 /* Tab bar — mobile bottom */
-.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);}
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
+/* Fix extra black space below tab bar on some devices */
+body::after{content:'';display:block;height:env(safe-area-inset-bottom,0);background:var(--sur);position:fixed;bottom:0;left:0;right:0;z-index:99;pointer-events:none;}
+@media(min-width:900px){body::after{display:none;}}
 .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 0 7px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:9px;font-family:'DM Sans',sans-serif;transition:color 0.2s;}
 .tb.active{color:var(--gold);}
 .ti{font-size:18px;margin-bottom:3px;line-height:1;}
