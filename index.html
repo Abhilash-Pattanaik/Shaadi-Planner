@@ -91,7 +91,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sur);color:var(--text);mi
 .cd-pill{background:var(--gold-l);color:var(--gold-d);font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;}
 
 /* Tab bar — mobile bottom */
-.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
+.tab-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--sur);border-top:0.5px solid var(--bor);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -2px 12px rgba(0,0,0,0.06);}/* Extend tab bar bg below safe area */.tab-bar::after{content:'';position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:var(--sur);z-index:99;pointer-events:none;}
 /* Fix extra black space below tab bar on some devices */
 .tb{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 0 7px;cursor:pointer;border:none;background:none;color:var(--text3);font-size:9px;font-family:'DM Sans',sans-serif;transition:color 0.2s;}
 .tb.active{color:var(--gold);}
@@ -2175,9 +2175,12 @@ const IS_READONLY = new URLSearchParams(window.location.search).get('readonly') 
   || new URLSearchParams(window.location.search).get('view') === '1';
 
 function applyReadonlyMode() {
-  if (!IS_READONLY) return;
-  document.body.classList.add('readonly-mode');
   const banner = document.getElementById('readonly-banner');
+  if (!IS_READONLY) {
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+  document.body.classList.add('readonly-mode');
   if (banner) banner.style.display = 'flex';
   // Hide sync button in readonly
   const syncBtn = document.getElementById('sync-btn');
