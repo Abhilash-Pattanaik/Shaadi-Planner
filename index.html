@@ -434,7 +434,7 @@ const VENDOR_STATUSES = [
   {id:'cancelled',  label:'Cancelled',   cls:'r'}
 ];
 
-const TASK_CATS = ['Venue','Catering','Attire','Ceremony','Photography','Invitations','Beauty','Travel','Finance','Other'];
+// TASK_CATS removed — dropdowns now use allCats() to stay in sync with DEFAULT_CATS + customCats
 
 const SWATCH_COLORS = ['#7C3AED','#9333EA','#A855F7','#6D28D9','#C026D3','#D946EF','#6366F1','#8B5CF6','#A78BFA','#9B8EC4'];
 const EMOJI_OPTS    = ['🎪','🎭','🎨','🎵','🚗','🏡','💐','🍰','🥂','💡','📷','🎁','🛍️','💻','🏋️'];
@@ -445,10 +445,10 @@ const DEFAULT_TASKS = [
   {title:'Book photographer',      category:'Photography', event:'wedding',    dueDate:'',done:false},
   {title:'Order wedding invitations',category:'Invitations',event:'wedding',   dueDate:'2026-11-01',done:false},
   {title:'Book engagement venue',  category:'Venue',       event:'engagement', dueDate:'',done:false},
-  {title:'Bridal outfit shopping', category:'Attire',      event:'wedding',    dueDate:'',done:false},
-  {title:'Book makeup artist',     category:'Beauty',      event:'wedding',    dueDate:'',done:false},
-  {title:'Plan honeymoon',         category:'Travel',      event:'wedding',    dueDate:'',done:false},
-  {title:'Set savings goal',       category:'Finance',     event:'wedding',    dueDate:'',done:false},
+  {title:'Bridal outfit shopping', category:'Clothes',       event:'wedding',    dueDate:'',done:false},
+  {title:'Book makeup artist',     category:'Miscellaneous', event:'wedding',    dueDate:'',done:false},
+  {title:'Plan honeymoon',         category:'Honeymoon',     event:'wedding',    dueDate:'',done:false},
+  {title:'Set savings goal',       category:'Miscellaneous', event:'wedding',    dueDate:'',done:false},
 ];
 
 // ── State ──────────────────────────────────────────────
@@ -2072,8 +2072,7 @@ async function saveEditExpense(id){
 function openEditTaskModal(id){
   if(IS_READONLY){showToast('👁️ View-only mode');return;}
   const t = S.tasks.find(t => t.id === id); if(!t) return;
-  const catOpts = [...TASK_CATS, ...S.customCats.map(c=>c.name)]
-    .map(c=>`<option value="${c}">${c}</option>`).join('');
+  const catOpts = allCats().map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
   openM(`
     <div class="m-title serif">Edit Task ✅</div>
     <div class="fg"><label class="fl">Task Name</label><input class="fi" type="text" id="t-title" value="${(t.title||'').replace(/"/g,'&quot;')}"></div>
@@ -2242,8 +2241,7 @@ function openEngGoalModal(){
 }
 
 function openTaskModal(){
-  const catOpts = [...TASK_CATS, ...S.customCats.map(c=>c.name)]
-    .map(c=>`<option value="${c}">${c}</option>`).join('');
+  const catOpts = allCats().map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
   openM(`
     <div class="m-title serif">Add Task ✅</div>
     <div class="fg"><label class="fl">Task Name</label><input class="fi" type="text" id="t-title" placeholder="e.g. Book the banquet hall"></div>
