@@ -1489,24 +1489,29 @@ let guestEvFilter='wedding', guestSearch='';
 function renderGuests() {
   const wGuests=S.guests.filter(g=>g.event==='wedding');
   const eGuests=S.guests.filter(g=>g.event==='engagement');
+  const bGuests=S.guests.filter(g=>g.event==='barajaatri');
   const wTotal=wGuests.reduce((a,g)=>a+(g.count||1),0);
   const eTotal=eGuests.reduce((a,g)=>a+(g.count||1),0);
+  const bTotal=bGuests.reduce((a,g)=>a+(g.count||1),0);
   const wInvited=wGuests.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
   const eInvited=eGuests.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
+  const bInvited=bGuests.filter(g=>g.invited).reduce((a,g)=>a+(g.count||1),0);
 
   const pending=S.guests.filter(g=>g.event===guestEvFilter&&!g.invited).length;
-  const invitedCount=(guestEvFilter==='wedding'?wInvited:eInvited);
+  const invitedCount=(guestEvFilter==='wedding'?wInvited:guestEvFilter==='engagement'?eInvited:bInvited);
 
   document.getElementById('pg-guests').innerHTML=`
     <div class="sg">
       <div class="sc"><div class="sl">💒 Wedding Guests</div><div class="sv o">${wTotal} people</div></div>
       <div class="sc"><div class="sl">💍 Engagement Guests</div><div class="sv o">${eTotal} people</div></div>
+      <div class="sc"><div class="sl">🎺 Barajaatri Guests</div><div class="sv o">${bTotal} people</div></div>
       <div class="sc"><div class="sl">Invites Sent</div><div class="sv g">${invitedCount}</div></div>
       <div class="sc"><div class="sl">Invite Pending</div><div class="sv r">${pending}</div></div>
     </div>
     <div class="tog-wrap">
       <div class="tog-opt ${guestEvFilter==='wedding'?'active':''}" onclick="setGuestEv('wedding')">💒 Wedding</div>
       <div class="tog-opt ${guestEvFilter==='engagement'?'active':''}" onclick="setGuestEv('engagement')">💍 Engagement</div>
+      <div class="tog-opt ${guestEvFilter==='barajaatri'?'active':''}" onclick="setGuestEv('barajaatri')">🎺 Barajaatri</div>
     </div>
     <input class="search-bar" type="text" id="guest-search-input" placeholder="Search guest name..." value="${guestSearch.replace(/"/g,'&quot;')}" oninput="filterGuests(this.value)">
     <div id="guest-list-wrap"></div>`;
@@ -1563,7 +1568,7 @@ function renderGuestList() {
         <button class="btn-sm sec" onclick="openEditGuestModal('${g.id}')" style="font-size:11px">Edit</button><button class="btn-ic" onclick="delGuest('${g.id}')">✕</button>
       </div>`;}).join('');
     wrap.innerHTML=`<div class="card">
-      <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':'💍 Engagement'} · ${total} people · ${invited} invited</div>
+      <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':guestEvFilter==='engagement'?'💍 Engagement':'🎺 Barajaatri'} · ${total} people · ${invited} invited</div>
       ${items||'<div class="empty"><div class="empty-ic">👥</div>No guests yet.<br>Tap + to add guests.</div>'}
     </div>`;
   }
@@ -2107,6 +2112,7 @@ function openEditGuestModal(id){
       <div class="tog-wrap" style="margin-bottom:0">
         <div class="tog-opt ${g.event==='wedding'?'active':''}" id="gev-w" onclick="selectGuestEv('wedding')">💒 Wedding</div>
         <div class="tog-opt ${g.event==='engagement'?'active':''}" id="gev-e" onclick="selectGuestEv('engagement')">💍 Engagement</div>
+        <div class="tog-opt ${g.event==='barajaatri'?'active':''}" id="gev-bj" onclick="selectGuestEv('barajaatri')">🎺 Barajaatri</div>
       </div>
       <input type="hidden" id="g-event" value="${g.event||'wedding'}">
     </div>
@@ -2141,6 +2147,7 @@ function openGuestModal(){
       <div class="tog-wrap" style="margin-bottom:0">
         <div class="tog-opt active" id="gev-w" onclick="selectGuestEv('wedding')">💒 Wedding</div>
         <div class="tog-opt" id="gev-e" onclick="selectGuestEv('engagement')">💍 Engagement</div>
+        <div class="tog-opt" id="gev-bj" onclick="selectGuestEv('barajaatri')">🎺 Barajaatri</div>
         <div class="tog-opt" id="gev-b" onclick="selectGuestEv('both')">Both</div>
       </div>
       <input type="hidden" id="g-event" value="wedding">
@@ -2159,7 +2166,7 @@ function openGuestModal(){
 let _selGuestInvited=false;
 function selectGuestEv(ev){
   document.getElementById('g-event').value=ev;
-  const map={wedding:'gev-w',engagement:'gev-e',both:'gev-b'};
+  const map={wedding:'gev-w',engagement:'gev-e',barajaatri:'gev-bj',both:'gev-b'};
   Object.entries(map).forEach(([key,id])=>{
     const el=document.getElementById(id);
     if(el) el.classList.toggle('active',key===ev);
@@ -2190,7 +2197,7 @@ async function addGuest(){
     S.guests.push({id:uid(),name,event,count,invited});
   }
   await saveS(); closeM();
-  guestEvFilter=event==='both'?'wedding':event;
+  guestEvFilter=event==='both'?'wedding':event==='barajaatri'?'barajaatri':event;
   renderTab();
   showToast(`✅ ${name} added!`);
   if(S.sheetsUrl) syncToSheets(true);
