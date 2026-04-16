@@ -636,7 +636,8 @@ function exportCSV(type) {
     fn='shaadi_expenses.csv';
   } else if(type==='vendors'){
     csv='Name,Phone,Category,Total Amount,Paid Amount,Status,Notes\n';
-    S.vendors.forEach(v=>{csv+=`"${v.name}","${v.phone||''}","${getCat(v.category).name}",${v.totalAmount||0},${v.paidAmount||0},"${v.status}","${v.notes||''}"\n`;});
+    S.vendors.forEach(v=>{csv+=`"${v.name}","${v.phone||''}","${getCat(v.category).name}",${v.totalAmount||0},${v.paidAmount||0},"${v.status}","${v.notes||''}"
+`;});
     fn='shaadi_vendors.csv';
   } else if(type==='tasks'){
     csv='Task,Category,Event,Due Date,Done\n';
@@ -1053,7 +1054,7 @@ function renderMoney() {
           <td>${s.note||'—'}</td>
           <td>${fmtDate(s.date)}</td>
           <td style="text-align:right;color:var(--green);font-weight:500">+${fmt(s.amount)}</td>
-          <td><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></td>
+          <td style="white-space:nowrap"><button class="btn-sm sec" onclick="openEditSavingModal('${s.id}')" style="font-size:11px;margin-right:4px">Edit</button><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></td>
         </tr>`;}).join('');
       content=`<div class="sc" style="margin-bottom:12px;display:inline-block;padding:10px 20px"><div class="sl">Total Saved</div><div class="sv g" style="font-size:22px">${fmt(total)}</div></div>
       <div class="dt-wrap"><table class="dt">
@@ -1066,7 +1067,7 @@ function renderMoney() {
         return `<div class="li">
         <div class="li-icon" style="background:var(--green-l)">${src.emoji}</div>
         <div class="li-info"><div class="li-title">${cleanMonth(s.month)||fmtDate(s.date)}</div><div class="li-sub">${src.name}${s.note?' · '+s.note:''} · ${fmtDate(s.date)}</div></div>
-        <div class="li-right"><div class="li-amt g">+${fmt(s.amount)}</div><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></div>
+        <div class="li-right"><div class="li-amt g">+${fmt(s.amount)}</div><button class="btn-sm sec" onclick="openEditSavingModal('${s.id}')" style="font-size:11px">Edit</button><button class="btn-ic" onclick="delSaving('${s.id}')">✕</button></div>
       </div>`;}).join('');
       content=`<div class="sc" style="margin-bottom:10px;text-align:center"><div class="sl">Total Saved</div><div class="sv g" style="font-size:24px">${fmt(total)}</div></div>
       <div class="card"><div class="card-t">Savings (${list.length})</div>${items||'<div class="empty"><div class="empty-ic">🌱</div>No savings yet. Tap + to add.</div>'}</div>`;
@@ -1091,7 +1092,7 @@ function renderMoney() {
           <td><span class="badge ${e.event==='engagement'?'o':'b'}">${e.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span></td>
           <td>${vendor?`🤝 ${vendor.name}`:'—'}</td>
           <td style="text-align:right;color:var(--red);font-weight:500">-${fmt(e.amount)}</td>
-          <td><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></td>
+          <td style="white-space:nowrap"><button class="btn-sm sec" onclick="openEditExpenseModal('${e.id}')" style="font-size:11px;margin-right:4px">Edit</button><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></td>
         </tr>`;}).join('');
       content=`${catPills}<div class="sc" style="margin-bottom:12px;display:inline-block;padding:10px 20px"><div class="sl">Total Expenses</div><div class="sv r" style="font-size:22px">${fmt(total)}</div></div>
       <div class="dt-wrap"><table class="dt">
@@ -1104,7 +1105,7 @@ function renderMoney() {
         return `<div class="li">
           <div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div>
           <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · 💍 Engagement':''}${e.vendorId?` · 🤝 ${(S.vendors.find(v=>v.id===e.vendorId)||{name:''}).name}`:''}  · ${fmtDate(e.date)}</div></div>
-          <div class="li-right"><div class="li-amt r">-${fmt(e.amount)}</div><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></div>
+          <div class="li-right"><div class="li-amt r">-${fmt(e.amount)}</div><button class="btn-sm sec" onclick="openEditExpenseModal('${e.id}')" style="font-size:11px">Edit</button><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></div>
         </div>`;}).join('');
       content=`${catPills}<div class="card"><div class="card-t">Expenses · ${fmt(total)}</div>${items||'<div class="empty"><div class="empty-ic">🧾</div>No expenses yet. Tap + to add.</div>'}</div>`;
     }
@@ -1165,7 +1166,7 @@ function renderTaskList() {
         <td><span style="color:var(--text3);font-size:12px">${t.category}</span></td>
         <td><span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span></td>
         <td style="color:var(--text3);font-size:12px">${t.dueDate?fmtDate(t.dueDate):'—'}</td>
-        <td><button class="btn-ic" onclick="delTask('${t.id}')">✕</button></td>
+        <td style="white-space:nowrap"><button class="btn-sm sec" onclick="openEditTaskModal('${t.id}')" style="font-size:11px;margin-right:4px">Edit</button><button class="btn-ic" onclick="delTask('${t.id}')">✕</button></td>
       </tr>`).join('')||`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">No tasks found.</td></tr>`}
       </tbody></table></div>`
     :
@@ -1180,7 +1181,7 @@ function renderTaskList() {
             ${t.dueDate?`<span>📅 ${fmtDate(t.dueDate)}</span>`:''}
           </div>
         </div>
-        <button class="btn-ic" onclick="delTask('${t.id}')">✕</button>
+        <button class="btn-sm sec" onclick="openEditTaskModal('${t.id}')" style="font-size:11px">Edit</button><button class="btn-ic" onclick="delTask('${t.id}')">✕</button>
       </div>`).join('') || '<div class="empty"><div class="empty-ic">🎉</div>No tasks found.</div>'
     }</div>`;
 
@@ -1234,11 +1235,12 @@ function renderVendors() {
       const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
       const bal=(v.totalAmount||0)-(v.paidAmount||0);
       return `<tr>
-        <td><span style="font-size:18px">${cat.emoji}</span> <strong>${v.name}</strong>${v.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${v.notes}</div>`:''}</td>
+        <td style="cursor:pointer" onclick="openVendorDetail('${v.id}')"><span style="font-size:18px">${cat.emoji}</span> <strong style="color:var(--gold)">${v.name}</strong>${v.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${v.notes}</div>`:''}</td>
         <td style="color:var(--text3)">${cat.name}</td>
         <td style="text-align:right">${fmt(v.totalAmount||0)}</td>
         <td style="text-align:right;color:var(--green)">${fmt(v.paidAmount||0)}</td>
         <td style="text-align:right;color:${bal>0?'var(--red)':'var(--text3)'}">${fmt(bal)}</td>
+
         <td><span class="badge ${st.cls}" style="cursor:pointer;white-space:nowrap" onclick="cycleVendorStatus('${v.id}')">${st.label}</span></td>
         <td>${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')" style="font-size:11px">📞</button>`:''}</td>
         <td><button class="btn-sm sec" onclick="editVendor('${v.id}')" style="font-size:11px">Edit</button></td>
@@ -1253,23 +1255,24 @@ function renderVendors() {
     const cards=vendors.map(v=>{
       const cat=getCat(v.category);
       const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
-      return `<div class="vendor-card">
+      return `<div class="vendor-card" onclick="openVendorDetail('${v.id}')" style="cursor:pointer;transition:box-shadow 0.15s" onmouseenter="this.style.boxShadow='0 0 0 1.5px var(--gold)'" onmouseleave="this.style.boxShadow='none'">
         <div class="vendor-top">
           <div><div style="display:flex;align-items:center;gap:8px">
             <div style="font-size:18px">${cat.emoji}</div>
             <div><div class="vendor-name">${v.name}</div><div class="vendor-cat">${cat.name}</div></div>
           </div></div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-            <span class="badge ${st.cls}" style="cursor:pointer" onclick="cycleVendorStatus('${v.id}')">${st.label}</span>
-            <button class="btn-ic" onclick="delVendor('${v.id}')">✕</button>
+            <span class="badge ${st.cls}" style="cursor:pointer" onclick="event.stopPropagation();cycleVendorStatus('${v.id}')">${st.label}</span>
+            <button class="btn-ic" onclick="event.stopPropagation();delVendor('${v.id}')">✕</button>
           </div>
         </div>
         ${v.notes?`<div style="font-size:12px;color:var(--text3);margin-top:8px">${v.notes}</div>`:''}
+
         <div class="vendor-bottom">
           <div class="vendor-amt"><span style="color:var(--text3);font-size:12px">Total: </span><strong>${fmt(v.totalAmount||0)}</strong>${v.paidAmount?` · <span style="color:var(--green);font-size:12px">Paid: ${fmt(v.paidAmount)}</span>`:''}</div>
           <div class="vendor-actions">
-            ${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')">📞 Call</button>`:''}
-            <button class="btn-sm sec" onclick="editVendor('${v.id}')">Edit</button>
+            ${v.phone?`<button class="btn-sm sec" onclick="event.stopPropagation();callVendor('${v.phone}')">📞 Call</button>`:''}
+            <button class="btn-sm sec" onclick="event.stopPropagation();editVendor('${v.id}')">Edit</button>
           </div>
         </div>
       </div>`;}).join('');
@@ -1297,11 +1300,12 @@ function renderVendorList(){
       const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
       const bal=(v.totalAmount||0)-(v.paidAmount||0);
       return `<tr>
-        <td><span style="font-size:18px">${cat.emoji}</span> <strong>${v.name}</strong>${v.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${v.notes}</div>`:''}</td>
+        <td style="cursor:pointer" onclick="openVendorDetail('${v.id}')"><span style="font-size:18px">${cat.emoji}</span> <strong style="color:var(--gold)">${v.name}</strong>${v.notes?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${v.notes}</div>`:''}</td>
         <td style="color:var(--text3)">${cat.name}</td>
         <td style="text-align:right">${fmt(v.totalAmount||0)}</td>
         <td style="text-align:right;color:var(--green)">${fmt(v.paidAmount||0)}</td>
         <td style="text-align:right;color:${bal>0?'var(--red)':'var(--text3)'}">${fmt(bal)}</td>
+
         <td><span class="badge ${st.cls}" style="cursor:pointer;white-space:nowrap" onclick="cycleVendorStatus('${v.id}')">${st.label}</span></td>
         <td>${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')" style="font-size:11px">📞</button>`:''}</td>
         <td><button class="btn-sm sec" onclick="editVendor('${v.id}')" style="font-size:11px">Edit</button></td>
@@ -1315,23 +1319,24 @@ function renderVendorList(){
     const cards=vendors.map(v=>{
       const cat=getCat(v.category);
       const st=VENDOR_STATUSES.find(s=>s.id===v.status)||VENDOR_STATUSES[0];
-      return `<div class="vendor-card">
+      return `<div class="vendor-card" onclick="openVendorDetail('${v.id}')" style="cursor:pointer;transition:box-shadow 0.15s" onmouseenter="this.style.boxShadow='0 0 0 1.5px var(--gold)'" onmouseleave="this.style.boxShadow='none'">
         <div class="vendor-top">
           <div><div style="display:flex;align-items:center;gap:8px">
             <div style="font-size:18px">${cat.emoji}</div>
             <div><div class="vendor-name">${v.name}</div><div class="vendor-cat">${cat.name}</div></div>
           </div></div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-            <span class="badge ${st.cls}" style="cursor:pointer" onclick="cycleVendorStatus('${v.id}')">${st.label}</span>
-            <button class="btn-ic" onclick="delVendor('${v.id}')">✕</button>
+            <span class="badge ${st.cls}" style="cursor:pointer" onclick="event.stopPropagation();cycleVendorStatus('${v.id}')">${st.label}</span>
+            <button class="btn-ic" onclick="event.stopPropagation();delVendor('${v.id}')">✕</button>
           </div>
         </div>
         ${v.notes?`<div style="font-size:12px;color:var(--text3);margin-top:8px">${v.notes}</div>`:''}
+
         <div class="vendor-bottom">
           <div class="vendor-amt"><span style="color:var(--text3);font-size:12px">Total: </span><strong>${fmt(v.totalAmount||0)}</strong>${v.paidAmount?` · <span style="color:var(--green);font-size:12px">Paid: ${fmt(v.paidAmount)}</span>`:''}</div>
           <div class="vendor-actions">
-            ${v.phone?`<button class="btn-sm sec" onclick="callVendor('${v.phone}')">📞 Call</button>`:''}
-            <button class="btn-sm sec" onclick="editVendor('${v.id}')">Edit</button>
+            ${v.phone?`<button class="btn-sm sec" onclick="event.stopPropagation();callVendor('${v.phone}')">📞 Call</button>`:''}
+            <button class="btn-sm sec" onclick="event.stopPropagation();editVendor('${v.id}')">Edit</button>
           </div>
         </div>
       </div>`;}).join('');
@@ -1357,7 +1362,126 @@ async function delVendor(id){
   if(!confirm('Delete this vendor?')) return;
   S.vendors=S.vendors.filter(v=>v.id!==id); await saveS(); renderVendorList();
 }
+function openVendorDetail(id){
+  var v = S.vendors.find(function(v){ return v.id === id; });
+  if(!v) return;
+  var cat = getCat(v.category);
+  var st  = VENDOR_STATUSES.find(function(s){ return s.id === v.status; }) || VENDOR_STATUSES[0];
+
+  var payments = S.expenses
+    .filter(function(e){ return e.vendorId === id; })
+    .sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+
+  var total   = v.totalAmount || 0;
+  var paid    = v.paidAmount  || 0;
+  var balance = total - paid;
+  var pct     = total > 0 ? Math.min(100, Math.round((paid/total)*100)) : 0;
+  var barCol  = pct >= 100 ? '#34D399' : pct >= 50 ? '#F97316' : '#F43F5E';
+
+  // Due chip HTML
+  var dueChip = '';
+  if(v.dueDate){
+    var now2 = new Date(); now2.setHours(0,0,0,0);
+    var due2 = new Date(v.dueDate); due2.setHours(0,0,0,0);
+    var diff2 = Math.round((due2 - now2) / 86400000);
+    var dcol = diff2 < 0 ? '#F43F5E' : diff2 <= 1 ? '#F97316' : '#34D399';
+    var dbg  = diff2 < 0 ? 'rgba(244,63,94,0.1)' : diff2 <= 1 ? 'rgba(249,115,22,0.1)' : 'rgba(52,211,153,0.08)';
+    var dlbl = diff2 < 0 ? ('Overdue by ' + Math.abs(diff2) + 'd') : diff2 === 0 ? 'Due today' : diff2 === 1 ? 'Due tomorrow' : ('Due in ' + diff2 + 'd');
+    var payNowBtn = !IS_READONLY ? '<button class="btn-sm" style="font-size:11px;padding:4px 10px;background:'+dcol+'" onclick="closeM();setTimeout(function(){openExpenseModalForVendor(\''+id+'\')},100)">Pay Now</button>' : '';
+    var dueAmtLine = v.dueAmount ? '<div style="font-size:11px;color:'+dcol+';opacity:0.85">'+fmt(v.dueAmount)+' pending payment</div>' : '';
+    dueChip = '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;background:'+dbg+';border:0.5px solid '+dcol+'40;margin-bottom:14px">'
+      + '<span style="font-size:13px">💳</span>'
+      + '<div style="flex:1"><div style="font-size:12px;font-weight:600;color:'+dcol+'">'+dlbl+'</div>'+dueAmtLine+'</div>'
+      + payNowBtn
+      + '</div>';
+  }
+
+  // Payment history rows
+  var payRows = '';
+  if(payments.length === 0){
+    var addFirstBtn = !IS_READONLY ? '<div style="margin-top:10px"><button class="btn-sm" onclick="closeM();setTimeout(function(){openExpenseModalForVendor(\''+id+'\')},100)">+ Add First Payment</button></div>' : '';
+    payRows = '<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px"><div style="font-size:28px;margin-bottom:8px">💸</div>No payments recorded yet'+addFirstBtn+'</div>';
+  } else {
+    payRows = payments.map(function(e, i){
+      var isFirst = i === 0;
+      var dotBg  = isFirst ? 'var(--gold)' : 'var(--bor)';
+      var connector = i < payments.length - 1 ? '<div style="width:1px;flex:1;background:var(--bor);margin-top:4px;min-height:20px"></div>' : '';
+      var evtLabel = e.event === 'engagement' ? '💍 Engagement' : '💒 Wedding';
+      return '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--bor)">'
+        + '<div style="display:flex;flex-direction:column;align-items:center">'
+        + '<div style="width:10px;height:10px;border-radius:50%;background:'+dotBg+';border:2px solid '+dotBg+';flex-shrink:0;margin-top:3px"></div>'
+        + connector
+        + '</div>'
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+        + '<div style="font-size:13px;font-weight:500;color:var(--text)">'+( e.description || cat.name)+'</div>'
+        + '<div style="font-size:14px;font-weight:600;color:#34D399;white-space:nowrap">+'+fmt(e.amount)+'</div>'
+        + '</div>'
+        + '<div style="font-size:11px;color:var(--text3);margin-top:2px">'+fmtDate(e.date)+' · '+evtLabel+'</div>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  var addPayBtn = !IS_READONLY ? '<button class="btn-sm" onclick="closeM();setTimeout(function(){openExpenseModalForVendor(\''+id+'\')},100)">+ Add Payment</button>' : '';
+  var editBtn   = !IS_READONLY ? '<div style="margin-top:14px"><button class="btn sec" onclick="closeM();editVendor(\''+id+'\')">Edit Vendor</button></div>' : '';
+
+  var html = ''
+    + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
+    +   '<div style="font-size:24px">'+cat.emoji+'</div>'
+    +   '<div style="flex:1;min-width:0">'
+    +     '<div style="font-size:17px;font-weight:600;color:var(--text);font-family:\'Playfair Display\',serif">'+v.name+'</div>'
+    +     '<div style="font-size:12px;color:var(--text3);margin-top:1px">'+cat.name+'</div>'
+    +   '</div>'
+    +   '<span class="badge '+st.cls+'">'+st.label+'</span>'
+    + '</div>'
+
+    + '<div style="background:var(--sur2);border-radius:12px;padding:12px 14px;margin-bottom:14px">'
+    +   '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center">'
+    +     '<div style="border-right:0.5px solid var(--bor);padding-right:8px">'
+    +       '<div style="font-size:11px;color:var(--text3);margin-bottom:3px">Total</div>'
+    +       '<div style="font-size:14px;font-weight:600;color:var(--text)">'+fmt(total)+'</div>'
+    +     '</div>'
+    +     '<div style="border-right:0.5px solid var(--bor);padding:0 8px">'
+    +       '<div style="font-size:11px;color:var(--text3);margin-bottom:3px">Paid</div>'
+    +       '<div style="font-size:14px;font-weight:600;color:#34D399">'+fmt(paid)+'</div>'
+    +     '</div>'
+    +     '<div style="padding-left:8px">'
+    +       '<div style="font-size:11px;color:var(--text3);margin-bottom:3px">Balance</div>'
+    +       '<div style="font-size:14px;font-weight:600;color:'+(balance>0?'#F43F5E':'var(--text3)')+'">'+fmt(balance)+'</div>'
+    +     '</div>'
+    +   '</div>'
+    +   '<div style="margin-top:10px">'
+    +     '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px"><span>Payment progress</span><span>'+pct+'%</span></div>'
+    +     '<div style="height:6px;background:var(--sur3);border-radius:4px;overflow:hidden">'
+    +       '<div style="height:100%;width:'+pct+'%;background:'+barCol+';border-radius:4px"></div>'
+    +     '</div>'
+    +   '</div>'
+    + '</div>'
+
+
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'
+    +   '<div style="font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--text3)">Payment History ('+payments.length+')</div>'
+    +   addPayBtn
+    + '</div>'
+    + '<div>'+payRows+'</div>'
+    + editBtn;
+
+  openM(html);
+}
+
+function openExpenseModalForVendor(vendorId){
+  openExpenseModal();
+  setTimeout(function(){
+    var sel = document.getElementById('e-vendor');
+    if(sel) sel.value = vendorId;
+  }, 50);
+}
+
 function editVendor(id){if(IS_READONLY){showToast('👁️ View-only mode');return;}openVendorModal(id);}
+
+
+
 
 // ── Guests Tab ─────────────────────────────────────────
 let guestEvFilter='wedding', guestSearch='';
@@ -1417,7 +1541,7 @@ function renderGuestList() {
         <td><div style="display:flex;align-items:center;gap:10px"><div class="guest-avatar" style="width:30px;height:30px;font-size:11px;flex-shrink:0">${initials}</div>${g.name}</div></td>
         <td style="text-align:center">${g.count||1}</td>
         <td><span class="invite-badge ${g.invited?'invite-yes':'invite-no'}" onclick="toggleInvite('${g.id}')" style="cursor:pointer">${g.invited?'✓ Invited':'Pending'}</span></td>
-        <td><button class="btn-ic" onclick="delGuest('${g.id}')">✕</button></td>
+        <td style="white-space:nowrap"><button class="btn-sm sec" onclick="openEditGuestModal('${g.id}')" style="font-size:11px;margin-right:4px">Edit</button><button class="btn-ic" onclick="delGuest('${g.id}')">✕</button></td>
       </tr>`;}).join('');
     wrap.innerHTML=`<div class="dt-wrap"><table class="dt">
       <thead><tr><th>Guest Name</th><th style="text-align:center">People</th><th>Invite Status</th><th></th></tr></thead>
@@ -1436,7 +1560,7 @@ function renderGuestList() {
             <span style="color:var(--text3)">👥 ${g.count||1} ${(g.count||1)===1?'person':'people'}</span>
           </div>
         </div>
-        <button class="btn-ic" onclick="delGuest('${g.id}')">✕</button>
+        <button class="btn-sm sec" onclick="openEditGuestModal('${g.id}')" style="font-size:11px">Edit</button><button class="btn-ic" onclick="delGuest('${g.id}')">✕</button>
       </div>`;}).join('');
     wrap.innerHTML=`<div class="card">
       <div class="card-t">${guestEvFilter==='wedding'?'💒 Wedding':'💍 Engagement'} · ${total} people · ${invited} invited</div>
@@ -1867,6 +1991,149 @@ function openAddModal(){
   }
 }
 
+// ── Edit modals for Savings, Expense, Task, Guest ──────
+
+function openEditSavingModal(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
+  const s = S.savings.find(s => s.id === id); if(!s) return;
+  const now = new Date(); const opts = [];
+  for(let y=2025;y<=2027;y++) for(let m=0;m<12;m++) opts.push(`<option value="${MONTHS[m]} ${y}">${MONTHS[m]} ${y}</option>`);
+  const srcOpts = SAVINGS_SOURCES.map(src=>`<option value="${src.id}">${src.emoji} ${src.name}</option>`).join('');
+  openM(`
+    <div class="m-title serif">Edit Savings 💰</div>
+    <div class="fg"><label class="fl">Month</label><select class="fi" id="s-month">${opts.join('')}</select></div>
+    <div class="fg"><label class="fl">Saved In</label><select class="fi" id="s-src">${srcOpts}</select></div>
+    <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="s-amt" placeholder="e.g. 15000" inputmode="numeric" value="${s.amount||''}"></div>
+    <div class="fg"><label class="fl">Note (optional)</label><input class="fi" type="text" id="s-note" placeholder="e.g. Salary savings" value="${s.note||''}"></div>
+    <button class="btn" onclick="saveEditSaving('${id}')">Save Changes</button>
+    <button class="btn sec" onclick="delSaving('${id}');closeM()">Delete Entry</button>`);
+  const sel = document.getElementById('s-month');
+  for(let o of sel.options) if(o.value === (s.month||'')){o.selected=true;break;}
+  const srcSel = document.getElementById('s-src');
+  if(srcSel && s.source) srcSel.value = s.source;
+}
+
+async function saveEditSaving(id){
+  const s = S.savings.find(s => s.id === id); if(!s) return;
+  s.month  = document.getElementById('s-month').value;
+  s.source = document.getElementById('s-src').value;
+  s.amount = parseFloat(document.getElementById('s-amt').value)||0;
+  s.note   = document.getElementById('s-note').value.trim();
+  await saveS(); closeM(); renderTab(); showToast('✅ Savings updated!');
+}
+
+function openEditExpenseModal(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
+  const e = S.expenses.find(e => e.id === id); if(!e) return;
+  const catOpts = allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  const vendorOpts = `<option value="">-- None --</option>` + S.vendors.map(v=>`<option value="${v.id}">${getCat(v.category).emoji} ${v.name}</option>`).join('');
+  openM(`
+    <div class="m-title serif">Edit Expense 🧾</div>
+    <div class="fg"><label class="fl">Category</label><select class="fi" id="e-cat">${catOpts}</select></div>
+    <div class="fg"><label class="fl">Event</label><select class="fi" id="e-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
+    <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="e-amt" placeholder="e.g. 50000" inputmode="numeric" value="${e.amount||''}"></div>
+    <div class="fg"><label class="fl">Link to Vendor (optional)</label><select class="fi" id="e-vendor">${vendorOpts}</select></div>
+    <div class="fg"><label class="fl">Description (optional)</label><input class="fi" type="text" id="e-desc" value="${e.description||''}"></div>
+    <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="e-date" value="${e.date||''}"></div>
+    <button class="btn" onclick="saveEditExpense('${id}')">Save Changes</button>
+    <button class="btn sec" onclick="delExpense('${id}');closeM()">Delete Entry</button>`);
+  document.getElementById('e-cat').value   = e.category || '';
+  document.getElementById('e-event').value = e.event || 'wedding';
+  document.getElementById('e-vendor').value= e.vendorId || '';
+}
+
+async function saveEditExpense(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
+  const e = S.expenses.find(e => e.id === id); if(!e) return;
+  const oldAmount   = e.amount;
+  const oldVendorId = e.vendorId;
+  // Reverse old vendor paidAmount
+  if(oldVendorId){
+    const ov = S.vendors.find(v => v.id === oldVendorId);
+    if(ov) ov.paidAmount = Math.max(0, (ov.paidAmount||0) - oldAmount);
+  }
+  e.category    = document.getElementById('e-cat').value;
+  e.event       = document.getElementById('e-event').value;
+  e.amount      = parseFloat(document.getElementById('e-amt').value)||0;
+  e.vendorId    = document.getElementById('e-vendor').value||'';
+  e.description = document.getElementById('e-desc').value.trim();
+  e.date        = document.getElementById('e-date').value;
+  // Apply new vendor paidAmount
+  if(e.vendorId){
+    const nv = S.vendors.find(v => v.id === e.vendorId);
+    if(nv){
+      nv.paidAmount = (nv.paidAmount||0) + e.amount;
+      if(nv.paidAmount >= (nv.totalAmount||0) && nv.status !== 'paid') nv.status = 'paid';
+    }
+  }
+  await saveS(); closeM(); renderTab(); showToast('✅ Expense updated!');
+}
+
+function openEditTaskModal(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
+  const t = S.tasks.find(t => t.id === id); if(!t) return;
+  const catOpts = [...TASK_CATS, ...S.customCats.map(c=>c.name)]
+    .map(c=>`<option value="${c}">${c}</option>`).join('');
+  openM(`
+    <div class="m-title serif">Edit Task ✅</div>
+    <div class="fg"><label class="fl">Task Name</label><input class="fi" type="text" id="t-title" value="${(t.title||'').replace(/"/g,'&quot;')}"></div>
+    <div class="fg"><label class="fl">Category</label><select class="fi" id="t-cat">${catOpts}</select></div>
+    <div class="fg"><label class="fl">Event</label><select class="fi" id="t-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
+    <div class="fg"><label class="fl">Due Date (optional)</label><input class="fi" type="date" id="t-due" value="${t.dueDate||''}"></div>
+    <button class="btn" onclick="saveEditTask('${id}')">Save Changes</button>
+    <button class="btn sec" onclick="delTask('${id}');closeM()">Delete Task</button>`);
+  document.getElementById('t-cat').value   = t.category || '';
+  document.getElementById('t-event').value = t.event || 'wedding';
+}
+
+async function saveEditTask(id){
+  const t = S.tasks.find(t => t.id === id); if(!t) return;
+  const title = document.getElementById('t-title').value.trim();
+  if(!title){showToast('❌ Enter a task name');return;}
+  t.title    = title;
+  t.category = document.getElementById('t-cat').value;
+  t.event    = document.getElementById('t-event').value;
+  t.dueDate  = document.getElementById('t-due').value||'';
+  await saveS(); closeM(); renderTab(); showToast('✅ Task updated!');
+  if(S.sheetsUrl) syncToSheets(true);
+}
+
+function openEditGuestModal(id){
+  if(IS_READONLY){showToast('👁️ View-only mode');return;}
+  const g = S.guests.find(g => g.id === id); if(!g) return;
+  openM(`
+    <div class="m-title serif">Edit Guest 👥</div>
+    <div class="fg"><label class="fl">Guest Name</label><input class="fi" type="text" id="g-name" value="${(g.name||'').replace(/"/g,'&quot;')}"></div>
+    <div class="fg"><label class="fl">Event</label>
+      <div class="tog-wrap" style="margin-bottom:0">
+        <div class="tog-opt ${g.event==='wedding'?'active':''}" id="gev-w" onclick="selectGuestEv('wedding')">💒 Wedding</div>
+        <div class="tog-opt ${g.event==='engagement'?'active':''}" id="gev-e" onclick="selectGuestEv('engagement')">💍 Engagement</div>
+      </div>
+      <input type="hidden" id="g-event" value="${g.event||'wedding'}">
+    </div>
+    <div class="fg"><label class="fl">No. of People</label><input class="fi" type="number" id="g-count" inputmode="numeric" value="${g.count||1}" min="1"></div>
+    <div class="fg"><label class="fl">Invite Sent?</label>
+      <div class="tog-wrap" style="margin-bottom:0">
+        <div class="tog-opt ${!g.invited?'active':''}" id="ginv-n" onclick="selectInvite(false)">Not Yet</div>
+        <div class="tog-opt ${g.invited?'active':''}" id="ginv-y" onclick="selectInvite(true)">✓ Yes, Sent</div>
+      </div>
+    </div>
+    <button class="btn" onclick="saveEditGuest('${id}')">Save Changes</button>
+    <button class="btn sec" onclick="delGuest('${id}');closeM()">Delete Guest</button>`);
+}
+
+async function saveEditGuest(id){
+  const g = S.guests.find(g => g.id === id); if(!g) return;
+  const name = document.getElementById('g-name').value.trim();
+  if(!name){showToast('❌ Enter guest name');return;}
+  g.name    = name;
+  g.event   = document.getElementById('g-event').value;
+  g.count   = parseInt(document.getElementById('g-count').value)||1;
+  g.invited = document.getElementById('g-invited') ? document.getElementById('g-invited').value === 'true' : g.invited;
+  await saveS(); closeM(); renderTab(); showToast('✅ Guest updated!');
+  if(S.sheetsUrl) syncToSheets(true);
+}
+
 function openGuestModal(){
   openM(`
     <div class="m-title serif">Add Guest 👥</div>
@@ -2199,6 +2466,7 @@ function applyReadonlyMode() {
 }
 
 // ── Notification service ───────────────────────────────
+
 function getUpcomingTasks() {
   const now   = new Date(); now.setHours(0,0,0,0);
   const week  = new Date(now); week.setDate(now.getDate() + 7);
