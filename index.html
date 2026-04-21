@@ -1222,8 +1222,8 @@ function renderVendors() {
     <div class="sc"><div class="sl">Vendors</div><div class="sv">${S.vendors.length}</div></div>
   </div>`;
 
-  const statusOpts=['all','shortlisted','booked','advance_paid','fully_paid','cancelled'];
-  const statusLabels={'all':'All','shortlisted':'Shortlisted','booked':'Booked','advance_paid':'Advance Paid','fully_paid':'Fully Paid','cancelled':'Cancelled'};
+  const statusOpts=['all','shortlisted','booked','advance','paid','cancelled'];
+  const statusLabels={'all':'All','shortlisted':'Shortlisted','booked':'Booked','advance':'Advance Paid','paid':'Fully Paid','cancelled':'Cancelled'};
   const filterBar=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
     <input class="search-bar" type="text" placeholder="Search vendor..." value="${vendorSearch.replace(/"/g,'&quot;')}" oninput="filterVendors(this.value)" style="flex:1;min-width:160px;margin-bottom:0">
     <div class="pills" style="margin:0;flex-wrap:nowrap;overflow-x:auto">${statusOpts.map(s=>`<div class="pill ${vendorFilter===s?'active':''}" onclick="setVendorFilter('${s}')">${statusLabels[s]}</div>`).join('')}</div>
