@@ -1614,7 +1614,7 @@ function renderSettings(){
   var vn=ss.getSheetByName('Vendors')||ss.insertSheet('Vendors');
   vn.clearContents();
   vn.appendRow(['Name','Category','Phone','Total Amount','Paid Amount','Balance','Status','Notes']);
-  (data.vendors||[]).forEach(function(r){vn.appendRow([r.name,r.category,r.phone||'',r.totalAmount||0,r.paidAmount||0,(r.totalAmount||0)-(r.paidAmount||0),r.status,r.notes||'']);});
+  (data.vendors||[]).forEach(function(r){vn.appendRow([r.name,getCat(r.category).name,r.phone||'',r.totalAmount||0,r.paidAmount||0,(r.totalAmount||0)-(r.paidAmount||0),r.status,r.notes||'']);});
 
   var tk=ss.getSheetByName('Tasks')||ss.insertSheet('Tasks');
   tk.clearContents();
