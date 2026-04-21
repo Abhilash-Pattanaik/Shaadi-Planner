@@ -1601,6 +1601,16 @@ function renderSettings(){
   if(!raw) return ContentService.createTextOutput('no data');
   var data=JSON.parse(decodeURIComponent(raw));
 
+  // Build category ID → name lookup (default cats + custom cats)
+  var catLookup={
+    'venue':'Venue','catering':'Catering','decoration':'Decoration',
+    'photography':'Photography','clothes':'Clothes','jewelry':'Jewelry',
+    'mehendi':'Mehendi/Sangeet','engagement_cat':'Engagement','honeymoon':'Honeymoon',
+    'invitations':'Invitations','misc':'Miscellaneous'
+  };
+  (data.customCats||[]).forEach(function(c){ catLookup[c.id]=c.name; });
+  function resolveCat(id){ return catLookup[id]||id; }
+
   var s=ss.getSheetByName('Savings')||ss.insertSheet('Savings');
   s.clearContents();
   s.appendRow(['Month','Source','Amount','Note','Date']);
@@ -1609,17 +1619,17 @@ function renderSettings(){
   var ex=ss.getSheetByName('Expenses')||ss.insertSheet('Expenses');
   ex.clearContents();
   ex.appendRow(['Category','Amount','Description','Event','Date']);
-  (data.expenses||[]).forEach(function(r){ex.appendRow([r.category,r.amount,r.description||'',r.event||'',r.date]);});
+  (data.expenses||[]).forEach(function(r){ex.appendRow([resolveCat(r.category),r.amount,r.description||'',r.event||'',r.date]);});
 
   var vn=ss.getSheetByName('Vendors')||ss.insertSheet('Vendors');
   vn.clearContents();
   vn.appendRow(['Name','Category','Phone','Total Amount','Paid Amount','Balance','Status','Notes']);
-  (data.vendors||[]).forEach(function(r){vn.appendRow([r.name,getCat(r.category).name,r.phone||'',r.totalAmount||0,r.paidAmount||0,(r.totalAmount||0)-(r.paidAmount||0),r.status,r.notes||'']);});
+  (data.vendors||[]).forEach(function(r){vn.appendRow([r.name,resolveCat(r.category),r.phone||'',r.totalAmount||0,r.paidAmount||0,(r.totalAmount||0)-(r.paidAmount||0),r.status,r.notes||'']);});
 
   var tk=ss.getSheetByName('Tasks')||ss.insertSheet('Tasks');
   tk.clearContents();
   tk.appendRow(['Task','Category','Event','Due Date','Done']);
-  (data.tasks||[]).forEach(function(r){tk.appendRow([r.title,r.category,r.event,r.dueDate||'',r.done?'Yes':'No']);});
+  (data.tasks||[]).forEach(function(r){tk.appendRow([r.title,resolveCat(r.category),r.event,r.dueDate||'',r.done?'Yes':'No']);});
 
   var gl=ss.getSheetByName('Guests')||ss.insertSheet('Guests');
   gl.clearContents();
