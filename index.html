@@ -457,7 +457,7 @@ let S = {
   weddingDate:'2026-12-02', engagementDate:'2026-07-01',
   savings:[], expenses:[], vendors:[], tasks:[], guests:[],
   customCats:[],
-  sheetsUrl:'', lastSync:null,
+  sheetsUrl:'', lastSync:null, lastPush:null, lastPull:null,
   theme:'auto'
 };
 
@@ -490,6 +490,13 @@ function allCats() { return [...DEFAULT_CATS,...S.customCats]; }
 function getCat(id) { return allCats().find(c=>c.id===id)||DEFAULT_CATS[DEFAULT_CATS.length-1]; }
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function daysLeft(d) { return Math.max(0,Math.ceil((d-new Date())/86400000)); }
+function fmtDateTime(d) {
+  if(!d) return '—';
+  const dt = new Date(d);
+  if(isNaN(dt.getTime())) return '—';
+  return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})
+    + ' ' + dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true});
+}
 function fmtDate(d) {
   if(!d) return '';
   const dt=new Date(d);
@@ -564,7 +571,7 @@ async function syncToSheets(silent=false) {
       body: body.toString()
     });
     // no-cors always returns opaque — reaching here means network succeeded
-    syncStatus='synced'; S.lastSync=new Date().toISOString(); await saveS();
+    syncStatus='synced'; S.lastSync=new Date().toISOString(); S.lastPush=S.lastSync; await saveS();
     if(!silent) showToast('✅ Synced to Google Sheets!');
     if(curTab==='settings') renderSettings();
   } catch(err) {
@@ -580,7 +587,7 @@ async function syncToSheets(silent=false) {
       ifr.style.display='none'; ifr.src=url;
       document.body.appendChild(ifr);
       setTimeout(()=>{ try{document.body.removeChild(ifr);}catch(e){} }, 5000);
-      syncStatus='synced'; S.lastSync=new Date().toISOString(); await saveS();
+      syncStatus='synced'; S.lastSync=new Date().toISOString(); S.lastPush=S.lastSync; await saveS();
       if(!silent) showToast('✅ Synced! Verify in your Sheet.');
       if(curTab==='settings') renderSettings();
     } catch(err2) {
@@ -615,6 +622,7 @@ async function pullFromSheets(silent=false) {
     if(data.engagementDate) S.engagementDate = data.engagementDate;
 
     await saveS();
+    S.lastPull = new Date().toISOString(); S.lastSync = S.lastPull; await saveS();
     if(!silent) showToast('✅ Data pulled from Google Sheets!');
     renderTab();
     if(curTab==='settings') renderSettings();
@@ -1829,16 +1837,22 @@ function doGet(e){
     <div class="card">
       <div class="card-t">Google Sheets Sync ☁️</div>
       <div class="set-row">
-        <div class="set-info"><div class="set-t">Status</div><div class="set-d">${S.lastSync?'Last synced: '+fmtDate(S.lastSync):'Never synced'}</div></div>
+        <div class="set-info"><div class="set-t">Status</div><div class="set-d">${sheetSet?'Connected':'Not connected'}</div></div>
         <span class="badge ${sheetSet?'g':'gr'}">${sheetSet?'Connected':'Not Set'}</span>
       </div>
       ${sheetSet?`
       <div class="set-row">
-        <div class="set-info"><div class="set-t">Push to Sheets ☁️</div><div class="set-d">App data → Sheet (overwrite)</div></div>
+        <div class="set-info">
+          <div class="set-t">☁️ Push to Sheets</div>
+          <div class="set-d">App → Sheet (overwrite) · Last: <strong>${fmtDateTime(S.lastPush)}</strong></div>
+        </div>
         <button class="btn-sm" onclick="syncToSheets()">Push</button>
       </div>
       <div class="set-row">
-        <div class="set-info"><div class="set-t">Pull from Sheets ⬇️</div><div class="set-d">Sheet data → App (overwrite)</div></div>
+        <div class="set-info">
+          <div class="set-t">⬇️ Pull from Sheets</div>
+          <div class="set-d">Sheet → App (overwrite) · Last: <strong>${fmtDateTime(S.lastPull)}</strong></div>
+        </div>
         <button class="btn-sm" onclick="pullFromSheets()">Pull</button>
       </div>
       <div class="set-row">
