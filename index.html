@@ -293,6 +293,59 @@ select.fi{appearance:none;cursor:pointer;}
 /* Toast */
 .toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;}
 .toast.show{opacity:1;}
+/* ── Engagement Congratulations Banner ──────────────── */
+#eng-banner{
+  position:fixed;top:0;left:0;right:0;z-index:999;
+  display:flex;justify-content:center;
+  padding:10px 14px;
+  pointer-events:none;
+  animation:bannerIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes bannerIn{
+  from{opacity:0;transform:translateY(-20px) scale(0.97);}
+  to{opacity:1;transform:translateY(0) scale(1);}
+}
+@keyframes bannerOut{
+  from{opacity:1;transform:translateY(0) scale(1);}
+  to{opacity:0;transform:translateY(-16px) scale(0.97);}
+}
+#eng-banner .inner{
+  background:var(--bg,#0F0A1E);
+  border:1px solid rgba(124,58,237,0.28);
+  border-radius:16px;
+  overflow:hidden;
+  display:flex;
+  max-width:520px;
+  width:100%;
+  position:relative;
+  box-shadow:0 4px 24px rgba(109,40,217,0.18);
+  pointer-events:auto;
+}
+#eng-banner .shine{
+  position:absolute;top:0;left:0;width:35%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(167,139,250,0.07),transparent);
+  animation:bannerShimmer 3s infinite;
+}
+@keyframes bannerShimmer{
+  0%{transform:translateX(-100%);}100%{transform:translateX(300%);}
+}
+#eng-banner .bar{
+  width:5px;
+  background:linear-gradient(to bottom,#A78BFA,#6D28D9);
+  flex-shrink:0;
+}
+#eng-banner .content{
+  padding:14px 18px;flex:1;
+  display:flex;align-items:center;gap:14px;
+}
+#eng-banner .emoji{font-size:30px;}
+#eng-banner .tw{flex:1;}
+#eng-banner .t1{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:15px;color:var(--gold,#A78BFA);
+  margin:0 0 3px;font-weight:600;
+}
+#eng-banner .t2{font-size:12px;color:var(--text3,#6D5B9A);margin:0;}
 /* Goal banner */
 .goal-b{background:var(--gold-l);border-radius:var(--r);padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
 .goal-b-text{flex:1;font-size:13px;color:var(--gold-d);}
@@ -2617,6 +2670,29 @@ function downloadReadonlyHTML() {
 }
 
 // ── Init ───────────────────────────────────────────────
+function showEngagementBanner(){
+  const existing = document.getElementById('eng-banner');
+  if(existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'eng-banner';
+  el.innerHTML = `<div class="inner">
+    <div class="shine"></div>
+    <div class="bar"></div>
+    <div class="content">
+      <div class="emoji">💍</div>
+      <div class="tw">
+        <p class="t1">Congratulations on your Engagement!</p>
+        <p class="t2">You're engaged — the wedding planning begins! 💒</p>
+      </div>
+      <div class="badge">💜 Just Engaged</div>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+  setTimeout(()=>{
+    el.style.animation='bannerOut 0.4s ease forwards';
+    setTimeout(()=>el.remove(), 400);
+  }, 3000);
+}
 async function init(){
   await loadS();
   // Desktop: show inline countdown, hide mobile row; inject sidebar footer
@@ -2642,6 +2718,7 @@ async function init(){
   updateSyncIcon();
   applyReadonlyMode();
   updateNotifBadge();
+  setTimeout(showEngagementBanner, 400);
 
   // ── Readonly mode: auto-pull from Sheets ──────────────
   if(IS_READONLY){
