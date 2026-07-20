@@ -38,7 +38,21 @@ document.addEventListener('DOMContentLoaded',function(){
   document.head.appendChild(link);
 });
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAjfXuyLkdLc_4c_VwUXTQZlPzEYyqcnsc",
+  authDomain: "shaadi-planner-abhikisweta.firebaseapp.com",
+  databaseURL: "https://shaadi-planner-abhikisweta-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "shaadi-planner-abhikisweta",
+  storageBucket: "shaadi-planner-abhikisweta.firebasestorage.app",
+  messagingSenderId: "708983911096",
+  appId: "1:708983911096:web:3d17aa78ac1fbc576bfa4d"
+};
+firebase.initializeApp(firebaseConfig);
+const fbDb = firebase.database();
+</script>
 <style>
 :root {
   --gold:#7C3AED;--gold-l:#EDE9FE;--gold-d:#5B21B6;
@@ -515,26 +529,76 @@ let S = {
 };
 
 // ── Storage (localStorage — works in any browser) ──────
+// ── Firebase sync flag (avoid re-render loop on own saves) ──
+let _fbSaving = false;
+
 async function loadS() {
+  try {
+    // 1. Try Firebase first
+    const snap = await fbDb.ref('shaadi').get();
+    if (snap.exists()) {
+      const data = snap.val();
+      S = { ...S, ...data };
+      S.goal    = Number(S.goal)    || 0;
+      S.engGoal = Number(S.engGoal) || 0;
+      localStorage.setItem('shaadi_v3', JSON.stringify(S));
+      return;
+    }
+  } catch(e) { console.warn('Firebase load failed, trying localStorage:', e); }
+
+  // 2. Firebase empty or offline → try localStorage + migrate
   try {
     const r = localStorage.getItem('shaadi_v3');
     if(r) {
       const parsed = JSON.parse(r);
       S = {...S, ...parsed};
-      // Always ensure numeric types
       S.goal    = Number(S.goal)    || 0;
       S.engGoal = Number(S.engGoal) || 0;
+      // Auto-migrate existing localStorage data to Firebase
+      try {
+        _fbSaving = true;
+        await fbDb.ref('shaadi').set(S);
+        _fbSaving = false;
+        console.log('✅ Migrated localStorage data to Firebase');
+      } catch(e2) { _fbSaving = false; console.warn('Migration failed:', e2); }
     }
-  } catch(e) { console.warn('loadS error:', e); }
+  } catch(e) { console.warn('loadS localStorage error:', e); }
 }
+
 async function saveS() {
   try {
-    // Ensure goal is stored as number before saving
+    S.goal    = Number(S.goal)    || 0;
+    S.engGoal = Number(S.engGoal) || 0;
+    // Always update localStorage cache
+    localStorage.setItem('shaadi_v3', JSON.stringify(S));
+    // Save to Firebase
+    _fbSaving = true;
+    await fbDb.ref('shaadi').set(S);
+    _fbSaving = false;
+    updateNotifBadge();
+  } catch(e) {
+    _fbSaving = false;
+    console.warn('saveS error:', e);
+    updateNotifBadge();
+  }
+}
+
+// ── Real-time listener — syncs changes from other device ──
+function startRealtimeSync() {
+  fbDb.ref('shaadi').on('value', (snap) => {
+    if (_fbSaving) return; // Own save — skip
+    if (!snap.exists()) return;
+    const data = snap.val();
+    if (!data) return;
+    S = { ...S, ...data };
     S.goal    = Number(S.goal)    || 0;
     S.engGoal = Number(S.engGoal) || 0;
     localStorage.setItem('shaadi_v3', JSON.stringify(S));
+    renderTab();
+    updateCDs();
     updateNotifBadge();
-  } catch(e) { console.warn('saveS error:', e); }
+    showToast('🔄 Synced');
+  });
 }
 
 // ── Helpers ────────────────────────────────────────────
@@ -1888,7 +1952,18 @@ function doGet(e){
     </div>
 
     <div class="card">
-      <div class="card-t">Google Sheets Sync ☁️</div>
+      <div class="card-t">🔥 Firebase Sync</div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Status</div><div class="set-d" id="fb-status-text">Checking...</div></div>
+        <span class="badge g" id="fb-status-badge">Live</span>
+      </div>
+      <div class="set-row">
+        <div class="set-info"><div class="set-t">Real-time sync</div><div class="set-d">Automatic across all devices</div></div>
+        <span class="badge g">Auto ✓</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-t">Google Sheets ☁️</div>
       <div class="set-row">
         <div class="set-info"><div class="set-t">Status</div><div class="set-d">${sheetSet?'Connected':'Not connected'}</div></div>
         <span class="badge ${sheetSet?'g':'gr'}">${sheetSet?'Connected':'Not Set'}</span>
@@ -1897,14 +1972,14 @@ function doGet(e){
       <div class="set-row">
         <div class="set-info">
           <div class="set-t">☁️ Push to Sheets</div>
-          <div class="set-d">App → Sheet (overwrite) · Last: <strong>${fmtDateTime(S.lastPush)}</strong></div>
+          <div class="set-d">Firebase → Sheet (backup) · Last: <strong>${fmtDateTime(S.lastPush)}</strong></div>
         </div>
         <button class="btn-sm" onclick="syncToSheets()">Push</button>
       </div>
       <div class="set-row">
         <div class="set-info">
           <div class="set-t">⬇️ Pull from Sheets</div>
-          <div class="set-d">Sheet → App (overwrite) · Last: <strong>${fmtDateTime(S.lastPull)}</strong></div>
+          <div class="set-d">Sheet → Firebase + App · Last: <strong>${fmtDateTime(S.lastPull)}</strong></div>
         </div>
         <button class="btn-sm" onclick="pullFromSheets()">Pull</button>
       </div>
@@ -2670,6 +2745,20 @@ function downloadReadonlyHTML() {
 }
 
 // ── Init ───────────────────────────────────────────────
+// ── Firebase connection status ──────────────────────────
+function monitorFirebaseConnection() {
+  fbDb.ref('.info/connected').on('value', (snap) => {
+    const connected = snap.val();
+    const badge = document.getElementById('fb-status-badge');
+    const text  = document.getElementById('fb-status-text');
+    if (badge) {
+      badge.textContent = connected ? 'Live ✓' : 'Offline';
+      badge.className   = connected ? 'badge g' : 'badge r';
+    }
+    if (text) text.textContent = connected ? 'Connected — real-time sync active' : 'Offline — changes saved locally';
+  });
+}
+
 function showEngagementBanner(){
   const existing = document.getElementById('eng-banner');
   if(existing) existing.remove();
@@ -2695,6 +2784,8 @@ function showEngagementBanner(){
 }
 async function init(){
   await loadS();
+  // Start real-time Firebase sync listener
+  startRealtimeSync();
   // Desktop: show inline countdown, hide mobile row; inject sidebar footer
   if(window.innerWidth>=900){
     const deskPills = document.getElementById('cd-desk');
@@ -2718,6 +2809,7 @@ async function init(){
   updateSyncIcon();
   applyReadonlyMode();
   updateNotifBadge();
+  monitorFirebaseConnection();
   setTimeout(showEngagementBanner, 400);
 
   // ── Readonly mode: auto-pull from Sheets ──────────────
