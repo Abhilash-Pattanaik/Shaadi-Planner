@@ -531,6 +531,22 @@ let S = {
 // ── Storage (localStorage — works in any browser) ──────
 // ── Firebase sync flag (avoid re-render loop on own saves) ──
 let _fbSaving = false;
+let _showRecoveryBanner = false;
+let _autoSyncTimer = null;
+
+// Auto-push to Sheets 5 seconds after any data change
+function scheduleAutoSync() {
+  if (!S.sheetsUrl) return;
+  if (_autoSyncTimer) clearTimeout(_autoSyncTimer);
+  // Show pending indicator
+  const ic = document.getElementById('sync-ic');
+  if (ic) ic.textContent = '🔄';
+  _autoSyncTimer = setTimeout(async () => {
+    await syncToSheets(true);
+    const ic2 = document.getElementById('sync-ic');
+    if (ic2) { ic2.textContent = '✅'; setTimeout(()=>{ if(ic2) ic2.textContent='☁️'; }, 2000); }
+  }, 5000);
+}
 
 async function loadS() {
   try {
@@ -538,15 +554,18 @@ async function loadS() {
     const snap = await fbDb.ref('shaadi').get();
     if (snap.exists()) {
       const data = snap.val();
-      S = { ...S, ...data };
-      S.goal    = Number(S.goal)    || 0;
-      S.engGoal = Number(S.engGoal) || 0;
-      localStorage.setItem('shaadi_v3', JSON.stringify(S));
-      return;
+      // Only use Firebase data if it has actual content (not a blank state)
+      if (data && (data.savings?.length || data.expenses?.length || data.goal || data.sheetsUrl)) {
+        S = { ...S, ...data };
+        S.goal    = Number(S.goal)    || 0;
+        S.engGoal = Number(S.engGoal) || 0;
+        localStorage.setItem('shaadi_v3', JSON.stringify(S));
+        return;
+      }
     }
   } catch(e) { console.warn('Firebase load failed, trying localStorage:', e); }
 
-  // 2. Firebase empty or offline → try localStorage + migrate
+  // 2. Try localStorage (same domain)
   try {
     const r = localStorage.getItem('shaadi_v3');
     if(r) {
@@ -554,32 +573,37 @@ async function loadS() {
       S = {...S, ...parsed};
       S.goal    = Number(S.goal)    || 0;
       S.engGoal = Number(S.engGoal) || 0;
-      // Auto-migrate existing localStorage data to Firebase
+      // Migrate to Firebase
       try {
         _fbSaving = true;
         await fbDb.ref('shaadi').set(S);
         _fbSaving = false;
         console.log('✅ Migrated localStorage data to Firebase');
       } catch(e2) { _fbSaving = false; console.warn('Migration failed:', e2); }
+      return;
     }
   } catch(e) { console.warn('loadS localStorage error:', e); }
+
+  // 3. Both empty — show recovery banner
+  console.warn('No data found in Firebase or localStorage');
+  _showRecoveryBanner = true;
 }
 
 async function saveS() {
   try {
     S.goal    = Number(S.goal)    || 0;
     S.engGoal = Number(S.engGoal) || 0;
-    // Always update localStorage cache
     localStorage.setItem('shaadi_v3', JSON.stringify(S));
-    // Save to Firebase
     _fbSaving = true;
     await fbDb.ref('shaadi').set(S);
     _fbSaving = false;
     updateNotifBadge();
+    scheduleAutoSync(); // Auto-push to Sheets after 5s
   } catch(e) {
     _fbSaving = false;
     console.warn('saveS error:', e);
     updateNotifBadge();
+    scheduleAutoSync();
   }
 }
 
@@ -949,20 +973,23 @@ function renderHome() {
 
   const isDesktop = window.innerWidth >= 900;
 
-  // ① Expense by Category — stacked column (desktop) / donut (mobile)
-  const catTotals = {}, catWedding = {}, catEngagement = {};
+  // ① Expense by Category — group by RESOLVED category name (not raw ID)
+  // This prevents multiple "Miscellaneous" bars for different unknown/deleted category IDs
+  const catTotals = {}, catWedding = {}, catEngagement = {}, catMeta = {};
   S.expenses.forEach(e => {
-    catTotals[e.category]    = (catTotals[e.category]    || 0) + e.amount;
-    if(e.event === 'engagement') catEngagement[e.category] = (catEngagement[e.category] || 0) + e.amount;
-    else catWedding[e.category] = (catWedding[e.category] || 0) + e.amount;
+    const cat = getCat(e.category);
+    const key = cat.name; // Group by display name
+    catTotals[key]    = (catTotals[key]    || 0) + e.amount;
+    catMeta[key]      = cat; // Store cat meta for emoji/color
+    if(e.event === 'engagement') catEngagement[key] = (catEngagement[key] || 0) + e.amount;
+    else catWedding[key] = (catWedding[key] || 0) + e.amount;
   });
   const catE = Object.entries(catTotals).sort((a, b) => b[1] - a[1]).slice(0, 12);
-  const pieLabels = catE.map(([id]) => getCat(id).emoji + ' ' + getCat(id).name);
+  const pieLabels = catE.map(([name]) => catMeta[name].emoji + ' ' + name);
   const pieData   = catE.map(([, v]) => v);
-  const pieColors = catE.map(([id]) => getCat(id).color);
-  // Stacked data
-  const stackWedding    = catE.map(([id]) => catWedding[id]    || 0);
-  const stackEngagement = catE.map(([id]) => catEngagement[id] || 0);
+  const pieColors = catE.map(([name]) => catMeta[name].color);
+  const stackWedding    = catE.map(([name]) => catWedding[name]    || 0);
+  const stackEngagement = catE.map(([name]) => catEngagement[name] || 0);
 
   // ② Monthly savings — bar
   const mMap = {};
@@ -1028,6 +1055,14 @@ function renderHome() {
   const tasksTotal = S.tasks.length;
 
   document.getElementById('pg-home').innerHTML = `
+    ${_showRecoveryBanner ? `<div style="background:rgba(192,36,211,0.12);border:1px solid rgba(192,36,211,0.3);border-radius:14px;padding:14px 18px;margin-bottom:12px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:24px">⚠️</div>
+      <div style="flex:1">
+        <div style="font-weight:600;color:var(--text);margin-bottom:3px">Data not found</div>
+        <div style="font-size:12px;color:var(--text3)">Go to your old GitHub Pages URL → Settings → Push ☁️ to Sheets first. Then come here → Settings → Pull ⬇️ to restore.</div>
+      </div>
+      <button class="btn-sm" onclick="goTab('settings')">Settings →</button>
+    </div>` : ''}
     ${!goal ? `<div class="goal-b"><div style="font-size:22px">🎯</div><div class="goal-b-text"><strong>Set your wedding budget</strong><br>Track your savings progress</div><button class="btn-sm" onclick="openGoalModal()">Set Budget</button></div>` : ''}
 
     ${isDesktop ? `
