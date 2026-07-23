@@ -551,7 +551,7 @@ function scheduleAutoSync() {
 async function loadS() {
   try {
     // 1. Try Firebase first
-    const snap = await fbDb.ref('shaadi').get();
+    const snap = await fbDb.ref('shaadi_7f3a9b2c4d').get();
     if (snap.exists()) {
       const data = snap.val();
       // Only use Firebase data if it has actual content (not a blank state)
@@ -576,7 +576,7 @@ async function loadS() {
       // Migrate to Firebase
       try {
         _fbSaving = true;
-        await fbDb.ref('shaadi').set(S);
+        await fbDb.ref('shaadi_7f3a9b2c4d').set(S);
         _fbSaving = false;
         console.log('✅ Migrated localStorage data to Firebase');
       } catch(e2) { _fbSaving = false; console.warn('Migration failed:', e2); }
@@ -595,7 +595,7 @@ async function saveS() {
     S.engGoal = Number(S.engGoal) || 0;
     localStorage.setItem('shaadi_v3', JSON.stringify(S));
     _fbSaving = true;
-    await fbDb.ref('shaadi').set(S);
+    await fbDb.ref('shaadi_7f3a9b2c4d').set(S);
     _fbSaving = false;
     updateNotifBadge();
     scheduleAutoSync(); // Auto-push to Sheets after 5s
@@ -609,7 +609,7 @@ async function saveS() {
 
 // ── Real-time listener — syncs changes from other device ──
 function startRealtimeSync() {
-  fbDb.ref('shaadi').on('value', (snap) => {
+  fbDb.ref('shaadi_7f3a9b2c4d').on('value', (snap) => {
     if (_fbSaving) return; // Own save — skip
     if (!snap.exists()) return;
     const data = snap.val();
