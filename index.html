@@ -751,13 +751,17 @@ async function pullFromSheets(silent=false) {
     if(!data || (!data.savings && !data.expenses)) throw new Error('empty');
 
     // Merge — sheet is source of truth
+    // Load customCats FIRST so resolveCatId can match custom category names
+    if(data.customCats) S.customCats = data.customCats;
+    if(data.goal     !== undefined) S.goal    = Number(data.goal)    || 0;
+    if(data.engGoal  !== undefined) S.engGoal = Number(data.engGoal) || 0;
+    if(data.weddingDate)    S.weddingDate    = data.weddingDate;
+    if(data.engagementDate) S.engagementDate = data.engagementDate;
     if(data.savings)  S.savings  = data.savings.map(s=>({...s, month: cleanMonth(s.month)}));
     if(data.expenses) S.expenses = data.expenses.map(e=>({...e, category: resolveCatId(e.category)}));
     if(data.vendors)  S.vendors  = data.vendors.map(v=>({...v, category: resolveCatId(v.category)}));
     if(data.tasks)    S.tasks    = data.tasks.map(t=>({...t, category: resolveCatId(t.category)}));
     if(data.guests)   S.guests   = data.guests;
-    if(data.customCats) S.customCats = data.customCats;
-    if(data.goal     !== undefined) S.goal    = Number(data.goal)    || 0;
     if(data.engGoal  !== undefined) S.engGoal = Number(data.engGoal) || 0;
     if(data.weddingDate)    S.weddingDate    = data.weddingDate;
     if(data.engagementDate) S.engagementDate = data.engagementDate;
@@ -1812,7 +1816,7 @@ function renderSettings(){
   var ex=ss.getSheetByName('Expenses')||ss.insertSheet('Expenses');
   ex.clearContents();
   ex.appendRow(['Category','Amount','Description','Event','Date']);
-  (data.expenses||[]).forEach(function(r){ex.appendRow([r.category,r.amount,r.description||'',r.event||'',r.date]);});
+  (data.expenses||[]).forEach(function(r){ex.appendRow([resolveCat(r.category),r.amount,r.description||'',r.event||'',r.date]);});
 
   var vn=ss.getSheetByName('Vendors')||ss.insertSheet('Vendors');
   vn.clearContents();
@@ -2899,12 +2903,12 @@ async function init(){
         if(!resp.ok) throw new Error('http '+resp.status);
         const data = await resp.json();
         if(!data) throw new Error('empty response');
-        if(data.savings)     S.savings     = data.savings.map(s=>({...s,month:cleanMonth(s.month)}));
-        if(data.expenses)    S.expenses    = data.expenses;
-        if(data.vendors)     S.vendors     = data.vendors;
-        if(data.tasks)       S.tasks       = data.tasks;
-        if(data.guests)      S.guests      = data.guests;
         if(data.customCats)  S.customCats  = data.customCats;
+        if(data.savings)     S.savings     = data.savings.map(s=>({...s,month:cleanMonth(s.month)}));
+        if(data.expenses)    S.expenses    = data.expenses.map(e=>({...e, category: resolveCatId(e.category)}));
+        if(data.vendors)     S.vendors     = data.vendors.map(v=>({...v, category: resolveCatId(v.category)}));
+        if(data.tasks)       S.tasks       = data.tasks.map(t=>({...t, category: resolveCatId(t.category)}));
+        if(data.guests)      S.guests      = data.guests;
         if(data.goal     !== undefined) S.goal    = Number(data.goal)    || 0;
         if(data.engGoal  !== undefined) S.engGoal = Number(data.engGoal) || 0;
         if(data.weddingDate)    S.weddingDate    = data.weddingDate;
