@@ -1360,7 +1360,7 @@ function renderTaskList() {
       <tbody>${tasks.map(t=>`<tr>
         <td><div class="task-cb ${t.done?'done':''}" onclick="toggleTask('${t.id}')" style="margin:0">${t.done?'✓':''}</div></td>
         <td style="${t.done?'text-decoration:line-through;color:var(--text3)':''}">${t.title}</td>
-        <td><span style="color:var(--text3);font-size:12px">${t.category}</span></td>
+        <td><span style="color:var(--text3);font-size:12px">${getCat(t.category).emoji} ${getCat(t.category).name}</span></td>
         <td><span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span></td>
         <td style="color:var(--text3);font-size:12px">${t.dueDate?fmtDate(t.dueDate):'—'}</td>
         <td style="white-space:nowrap"><button class="btn-sm sec" onclick="openEditTaskModal('${t.id}')" style="font-size:11px;margin-right:4px">Edit</button><button class="btn-ic" onclick="delTask('${t.id}')">✕</button></td>
@@ -1373,7 +1373,7 @@ function renderTaskList() {
         <div class="task-info">
           <div class="task-title ${t.done?'done':''}">${t.title}</div>
           <div class="task-meta">
-            <span>${t.category}</span>
+            <span>${getCat(t.category).emoji} ${getCat(t.category).name}</span>
             <span class="badge ${t.event==='engagement'?'o':'b'}">${t.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span>
             ${t.dueDate?`<span>📅 ${fmtDate(t.dueDate)}</span>`:''}
           </div>
