@@ -752,9 +752,9 @@ async function pullFromSheets(silent=false) {
 
     // Merge — sheet is source of truth
     if(data.savings)  S.savings  = data.savings.map(s=>({...s, month: cleanMonth(s.month)}));
-    if(data.expenses) S.expenses = data.expenses;
-    if(data.vendors)  S.vendors  = data.vendors;
-    if(data.tasks)    S.tasks    = data.tasks;
+    if(data.expenses) S.expenses = data.expenses.map(e=>({...e, category: resolveCatId(e.category)}));
+    if(data.vendors)  S.vendors  = data.vendors.map(v=>({...v, category: resolveCatId(v.category)}));
+    if(data.tasks)    S.tasks    = data.tasks.map(t=>({...t, category: resolveCatId(t.category)}));
     if(data.guests)   S.guests   = data.guests;
     if(data.customCats) S.customCats = data.customCats;
     if(data.goal     !== undefined) S.goal    = Number(data.goal)    || 0;
@@ -956,7 +956,40 @@ function renderGaugeChart(canvasId, value, max, label) {
   </svg>`;
 }
 
-// ── Home / Dashboard ───────────────────────────────────
+// Resolve category string (name or ID) → proper category ID
+// Used when pulling from Sheets where names are stored instead of IDs
+function resolveCatId(str) {
+  if (!str) return 'misc';
+  const s = str.toString().trim().toLowerCase();
+  const all = allCats();
+  // 1. Exact ID match
+  const byId = all.find(c => c.id.toLowerCase() === s);
+  if (byId) return byId.id;
+  // 2. Name match (case-insensitive)
+  const byName = all.find(c => c.name.toLowerCase() === s);
+  if (byName) return byName.id;
+  // 3. Partial name match
+  const partial = all.find(c => c.name.toLowerCase().includes(s) || s.includes(c.name.toLowerCase()));
+  if (partial) return partial.id;
+  // 4. Common aliases
+  const aliases = {
+    'photo': 'photo', 'photography': 'photo',
+    'venue': 'venue', 'hall': 'venue',
+    'food': 'catering', 'catering': 'catering',
+    'decor': 'decor', 'decoration': 'decor', 'flowers': 'decor',
+    'clothes': 'clothes', 'clothing': 'clothes', 'outfit': 'clothes',
+    'jewel': 'jewel', 'jewelry': 'jewel', 'jewellery': 'jewel',
+    'mehendi': 'mehendi', 'sangeet': 'mehendi',
+    'engagement': 'engagement',
+    'honeymoon': 'honeymoon', 'travel': 'honeymoon',
+    'invite': 'invite', 'invitation': 'invite',
+    'guest': 'misc', 'shopping': 'misc',
+    'travel & stay': 'misc', 'cab': 'misc',
+  };
+  const match = Object.keys(aliases).find(k => s.includes(k));
+  if (match) return aliases[match];
+  return 'misc';
+}
 function renderHome() {
   const wd = getWeddingDate(), ed = getEngagementDate();
   const totalSaved = S.savings.reduce((a, x) => a + x.amount, 0);
@@ -1779,7 +1812,7 @@ function renderSettings(){
   var ex=ss.getSheetByName('Expenses')||ss.insertSheet('Expenses');
   ex.clearContents();
   ex.appendRow(['Category','Amount','Description','Event','Date']);
-  (data.expenses||[]).forEach(function(r){ex.appendRow([resolveCat(r.category),r.amount,r.description||'',r.event||'',r.date]);});
+  (data.expenses||[]).forEach(function(r){ex.appendRow([r.category,r.amount,r.description||'',r.event||'',r.date]);});
 
   var vn=ss.getSheetByName('Vendors')||ss.insertSheet('Vendors');
   vn.clearContents();
