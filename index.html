@@ -534,19 +534,8 @@ let _fbSaving = false;
 let _showRecoveryBanner = false;
 let _autoSyncTimer = null;
 
-// Auto-push to Sheets 5 seconds after any data change
-function scheduleAutoSync() {
-  if (!S.sheetsUrl) return;
-  if (_autoSyncTimer) clearTimeout(_autoSyncTimer);
-  // Show pending indicator
-  const ic = document.getElementById('sync-ic');
-  if (ic) ic.textContent = '🔄';
-  _autoSyncTimer = setTimeout(async () => {
-    await syncToSheets(true);
-    const ic2 = document.getElementById('sync-ic');
-    if (ic2) { ic2.textContent = '✅'; setTimeout(()=>{ if(ic2) ic2.textContent='☁️'; }, 2000); }
-  }, 5000);
-}
+// scheduleAutoSync disabled — Push/Pull is manual only
+function scheduleAutoSync() { /* no-op */ }
 
 async function loadS() {
   try {
@@ -598,12 +587,10 @@ async function saveS() {
     await fbDb.ref('shaadi_7f3a9b2c4d').set(S);
     _fbSaving = false;
     updateNotifBadge();
-    scheduleAutoSync(); // Auto-push to Sheets after 5s
   } catch(e) {
     _fbSaving = false;
     console.warn('saveS error:', e);
     updateNotifBadge();
-    scheduleAutoSync();
   }
 }
 
@@ -2256,6 +2243,7 @@ function openEditExpenseModal(id){
   const e = S.expenses.find(e => e.id === id); if(!e) return;
   const catOpts = allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
   const vendorOpts = `<option value="">-- None --</option>` + S.vendors.map(v=>`<option value="${v.id}">${getCat(v.category).emoji} ${v.name}</option>`).join('');
+  const dateVal = e.date ? e.date.split('T')[0] : '';
   openM(`
     <div class="m-title serif">Edit Expense 🧾</div>
     <div class="fg"><label class="fl">Category</label><select class="fi" id="e-cat">${catOpts}</select></div>
@@ -2263,7 +2251,7 @@ function openEditExpenseModal(id){
     <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="e-amt" placeholder="e.g. 50000" inputmode="numeric" value="${e.amount||''}"></div>
     <div class="fg"><label class="fl">Link to Vendor (optional)</label><select class="fi" id="e-vendor">${vendorOpts}</select></div>
     <div class="fg"><label class="fl">Description (optional)</label><input class="fi" type="text" id="e-desc" value="${e.description||''}"></div>
-    <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="e-date" value="${e.date||''}"></div>
+    <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="e-date" value="${dateVal}"></div>
     <button class="btn" onclick="saveEditExpense('${id}')">Save Changes</button>
     <button class="btn sec" onclick="delExpense('${id}');closeM()">Delete Entry</button>`);
   document.getElementById('e-cat').value   = e.category || '';
@@ -2301,13 +2289,16 @@ async function saveEditExpense(id){
 function openEditTaskModal(id){
   if(IS_READONLY){showToast('👁️ View-only mode');return;}
   const t = S.tasks.find(t => t.id === id); if(!t) return;
-  const catOpts = allCats().map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  // Options use ID as value (not name) so they match t.category
+  const catOpts = allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  // Convert any ISO date to YYYY-MM-DD for date input
+  const dueDateVal = t.dueDate ? t.dueDate.split('T')[0] : '';
   openM(`
     <div class="m-title serif">Edit Task ✅</div>
     <div class="fg"><label class="fl">Task Name</label><input class="fi" type="text" id="t-title" value="${(t.title||'').replace(/"/g,'&quot;')}"></div>
     <div class="fg"><label class="fl">Category</label><select class="fi" id="t-cat">${catOpts}</select></div>
     <div class="fg"><label class="fl">Event</label><select class="fi" id="t-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
-    <div class="fg"><label class="fl">Due Date (optional)</label><input class="fi" type="date" id="t-due" value="${t.dueDate||''}"></div>
+    <div class="fg"><label class="fl">Due Date (optional)</label><input class="fi" type="date" id="t-due" value="${dueDateVal}"></div>
     <button class="btn" onclick="saveEditTask('${id}')">Save Changes</button>
     <button class="btn sec" onclick="delTask('${id}');closeM()">Delete Task</button>`);
   document.getElementById('t-cat').value   = t.category || '';
