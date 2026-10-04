@@ -580,6 +580,7 @@ async function loadS() {
 
 async function saveS() {
   try {
+    recalcVendors();
     S.goal    = Number(S.goal)    || 0;
     S.engGoal = Number(S.engGoal) || 0;
     localStorage.setItem('shaadi_v3', JSON.stringify(S));
@@ -604,6 +605,7 @@ function startRealtimeSync() {
     S = { ...S, ...data };
     S.goal    = Number(S.goal)    || 0;
     S.engGoal = Number(S.engGoal) || 0;
+    recalcVendors();
     localStorage.setItem('shaadi_v3', JSON.stringify(S));
     renderTab();
     updateCDs();
@@ -616,6 +618,74 @@ function startRealtimeSync() {
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 function allCats() { return [...DEFAULT_CATS,...S.customCats]; }
 function getCat(id) { return allCats().find(c=>c.id===id)||DEFAULT_CATS[DEFAULT_CATS.length-1]; }
+
+// ── Vendor ⇄ Expense linkage (single source of truth = expenses) ──
+const OTHERS_ID = 'vendor_others';
+function ensureOthers(){
+  if(!Array.isArray(S.vendors)) S.vendors=[];
+  if(!Array.isArray(S.expenses)) S.expenses=[];
+  if(!S.vendors.find(v=>v.id===OTHERS_ID)){
+    S.vendors.push({id:OTHERS_ID,name:'Others',category:'misc',phone:'',totalAmount:0,paidAmount:0,status:'paid',notes:'Expenses with no specific vendor (shopping, misc.)',isOthers:true});
+  }
+}
+// Vendor paidAmount is a CACHE derived from linked expenses. Never edit it by hand.
+function recalcVendors(){
+  ensureOthers();
+  const sums={};
+  S.expenses.forEach(e=>{ if(e.vendorId) sums[e.vendorId]=(sums[e.vendorId]||0)+(Number(e.amount)||0); });
+  S.vendors.forEach(v=>{
+    const paid=sums[v.id]||0;
+    v.paidAmount=paid;
+    if(v.id===OTHERS_ID){ v.totalAmount=paid; v.status='paid'; return; }
+    if(v.status==='cancelled') return;
+    if((v.totalAmount||0)>0 && paid>=v.totalAmount) v.status='paid';
+    else if(v.status==='paid') v.status = paid>0 ? 'advance' : 'booked';
+    else if(paid>0 && v.status==='shortlisted') v.status='advance';
+  });
+}
+function vendorOptsHtml(){
+  const list=[...S.vendors.filter(v=>v.id!==OTHERS_ID), ...S.vendors.filter(v=>v.id===OTHERS_ID)];
+  return `<option value="">-- Select vendor --</option>`+list.map(v=>`<option value="${v.id}">${getCat(v.category).emoji} ${v.name}</option>`).join('');
+}
+function prefillCatFromVendor(){
+  const v=S.vendors.find(v=>v.id===document.getElementById('e-vendor').value);
+  if(v && v.id!==OTHERS_ID){ const c=document.getElementById('e-cat'); if(c) c.value=v.category; }
+}
+function unassignedBanner(){
+  const n=S.expenses.filter(e=>!e.vendorId).length;
+  return n?`<div class="card" style="border:1px solid var(--red);margin-bottom:12px;font-size:13px">⚠️ ${n} expense${n>1?'s have':' has'} no vendor. Tap Edit on ${n>1?'each':'it'} and pick a vendor (or "Others").</div>`:'';
+}
+// One-time migration from the old model (manual vendor paidAmount + optional link)
+function migrateV2(){
+  if(S.migratedV2) return null;
+  ensureOthers();
+  const before={}; S.vendors.forEach(v=>{before[v.id]=v.paidAmount||0;});
+  let autoLinked=0;
+  S.expenses.forEach(e=>{
+    if(!e.vendorId){
+      const d=(e.description||'').trim().toLowerCase();
+      const m=d && S.vendors.find(v=>v.id!==OTHERS_ID && (v.name||'').trim().toLowerCase()===d);
+      if(m){ e.vendorId=m.id; autoLinked++; }
+    }
+  });
+  recalcVendors();
+  const diffs=S.vendors.filter(v=>v.id!==OTHERS_ID && Math.round(before[v.id]||0)!==Math.round(v.paidAmount||0))
+    .map(v=>({name:v.name,old:before[v.id]||0,now:v.paidAmount||0}));
+  S.migratedV2=true;
+  return {diffs,autoLinked,unassigned:S.expenses.filter(e=>!e.vendorId).length};
+}
+function showMigrationReport(r){
+  if(!r) return;
+  const rows=r.diffs.map(d=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:0.5px solid var(--bor);font-size:13px"><span>${d.name}</span><span style="color:var(--text3)">${fmt(d.old)} → <strong style="color:var(--text)">${fmt(d.now)}</strong></span></div>`).join('');
+  if(!rows && !r.unassigned) return;
+  openM(`<div class="m-title serif">Vendor payments updated 🔧</div>
+    <div style="font-size:13px;color:var(--text3);margin-bottom:12px">Vendor "Paid" is now calculated only from expenses linked to that vendor. These vendors changed:</div>
+    ${rows||'<div style="font-size:13px">No vendor totals changed.</div>'}
+    ${r.autoLinked?`<div style="font-size:12px;color:var(--text3);margin-top:10px">${r.autoLinked} expense(s) auto-linked because their description matched a vendor name.</div>`:''}
+    ${r.unassigned?`<div style="font-size:12px;color:var(--red);margin-top:10px">${r.unassigned} expense(s) still need a vendor — fix them from the Money tab.</div>`:''}
+    <div style="font-size:12px;color:var(--text3);margin-top:10px">If a vendor's old paid amount was higher, the missing payment isn't in Expenses yet — add it there (don't double-add ones already logged).</div>
+    <button class="btn" style="margin-top:14px" onclick="closeM()">Got it</button>`);
+}
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function daysLeft(d) { return Math.max(0,Math.ceil((d-new Date())/86400000)); }
 function fmtDateTime(d) {
@@ -1274,11 +1344,11 @@ function renderMoney() {
           <td>${cat.emoji} ${cat.name}</td>
           <td>${e.description||'—'}</td>
           <td><span class="badge ${e.event==='engagement'?'o':'b'}">${e.event==='engagement'?'💍 Engagement':'💒 Wedding'}</span></td>
-          <td>${vendor?`🤝 ${vendor.name}`:'—'}</td>
+          <td>${vendor?`🤝 ${vendor.name}`:'<span style="color:var(--red)">⚠️ No vendor</span>'}</td>
           <td style="text-align:right;color:var(--red);font-weight:500">-${fmt(e.amount)}</td>
           <td style="white-space:nowrap"><button class="btn-sm sec" onclick="openEditExpenseModal('${e.id}')" style="font-size:11px;margin-right:4px">Edit</button><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></td>
         </tr>`;}).join('');
-      content=`${catPills}<div class="sc" style="margin-bottom:12px;display:inline-block;padding:10px 20px"><div class="sl">Total Expenses</div><div class="sv r" style="font-size:22px">${fmt(total)}</div></div>
+      content=`${unassignedBanner()}${catPills}<div class="sc" style="margin-bottom:12px;display:inline-block;padding:10px 20px"><div class="sl">Total Expenses</div><div class="sv r" style="font-size:22px">${fmt(total)}</div></div>
       <div class="dt-wrap"><table class="dt">
         <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Event</th><th>Vendor</th><th style="text-align:right">Amount</th><th></th></tr></thead>
         <tbody>${rows||`<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No expenses yet. Click + to add.</td></tr>`}</tbody>
@@ -1288,10 +1358,10 @@ function renderMoney() {
         const cat=getCat(e.category);
         return `<div class="li">
           <div class="li-icon" style="background:${cat.color}22">${cat.emoji}</div>
-          <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · 💍 Engagement':''}${e.vendorId?` · 🤝 ${(S.vendors.find(v=>v.id===e.vendorId)||{name:''}).name}`:''}  · ${fmtDate(e.date)}</div></div>
+          <div class="li-info"><div class="li-title">${e.description||cat.name}</div><div class="li-sub">${cat.name}${e.event==='engagement'?' · 💍 Engagement':''}${e.vendorId?` · 🤝 ${(S.vendors.find(v=>v.id===e.vendorId)||{name:''}).name}`:' · ⚠️ No vendor'}  · ${fmtDate(e.date)}</div></div>
           <div class="li-right"><div class="li-amt r">-${fmt(e.amount)}</div><button class="btn-sm sec" onclick="openEditExpenseModal('${e.id}')" style="font-size:11px">Edit</button><button class="btn-ic" onclick="delExpense('${e.id}')">✕</button></div>
         </div>`;}).join('');
-      content=`${catPills}<div class="card"><div class="card-t">Expenses · ${fmt(total)}</div>${items||'<div class="empty"><div class="empty-ic">🧾</div>No expenses yet. Tap + to add.</div>'}</div>`;
+      content=`${unassignedBanner()}${catPills}<div class="card"><div class="card-t">Expenses · ${fmt(total)}</div>${items||'<div class="empty"><div class="empty-ic">🧾</div>No expenses yet. Tap + to add.</div>'}</div>`;
     }
   }
   document.getElementById('pg-money').innerHTML=evToggle+typePills+content;
@@ -1543,7 +1613,10 @@ async function cycleVendorStatus(id){
   await saveS(); renderVendorList(); showToast('Status updated: '+VENDOR_STATUSES.find(s=>s.id===v.status).label);
 }
 async function delVendor(id){
-  if(!confirm('Delete this vendor?')) return;
+  if(id===OTHERS_ID){showToast('"Others" is a system vendor and can\'t be deleted');return;}
+  const linked=S.expenses.filter(e=>e.vendorId===id).length;
+  if(!confirm(linked?`Delete this vendor? Its ${linked} linked expense(s) will move to "Others".`:'Delete this vendor?')) return;
+  S.expenses.forEach(e=>{ if(e.vendorId===id) e.vendorId=OTHERS_ID; });
   S.vendors=S.vendors.filter(v=>v.id!==id); await saveS(); renderVendorList();
 }
 function openVendorDetail(id){
@@ -1662,7 +1735,7 @@ function openExpenseModalForVendor(vendorId){
   }, 50);
 }
 
-function editVendor(id){if(IS_READONLY){showToast('👁️ View-only mode');return;}openVendorModal(id);}
+function editVendor(id){if(IS_READONLY){showToast('👁️ View-only mode');return;}if(id===OTHERS_ID){showToast('"Others" is a system vendor — it can\'t be edited');return;}openVendorModal(id);}
 
 
 
@@ -2242,14 +2315,14 @@ function openEditExpenseModal(id){
   if(IS_READONLY){showToast('👁️ View-only mode');return;}
   const e = S.expenses.find(e => e.id === id); if(!e) return;
   const catOpts = allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
-  const vendorOpts = `<option value="">-- None --</option>` + S.vendors.map(v=>`<option value="${v.id}">${getCat(v.category).emoji} ${v.name}</option>`).join('');
+  const vendorOpts = vendorOptsHtml();
   const dateVal = e.date ? e.date.split('T')[0] : '';
   openM(`
     <div class="m-title serif">Edit Expense 🧾</div>
     <div class="fg"><label class="fl">Category</label><select class="fi" id="e-cat">${catOpts}</select></div>
     <div class="fg"><label class="fl">Event</label><select class="fi" id="e-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
     <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="e-amt" placeholder="e.g. 50000" inputmode="numeric" value="${e.amount||''}"></div>
-    <div class="fg"><label class="fl">Link to Vendor (optional)</label><select class="fi" id="e-vendor">${vendorOpts}</select></div>
+    <div class="fg"><label class="fl">Vendor * <span style="font-size:11px;color:var(--text3)">(pick "Others" if no specific vendor)</span></label><select class="fi" id="e-vendor">${vendorOpts}</select></div>
     <div class="fg"><label class="fl">Description (optional)</label><input class="fi" type="text" id="e-desc" value="${e.description||''}"></div>
     <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="e-date" value="${dateVal}"></div>
     <button class="btn" onclick="saveEditExpense('${id}')">Save Changes</button>
@@ -2262,27 +2335,16 @@ function openEditExpenseModal(id){
 async function saveEditExpense(id){
   if(IS_READONLY){showToast('👁️ View-only mode');return;}
   const e = S.expenses.find(e => e.id === id); if(!e) return;
-  const oldAmount   = e.amount;
-  const oldVendorId = e.vendorId;
-  // Reverse old vendor paidAmount
-  if(oldVendorId){
-    const ov = S.vendors.find(v => v.id === oldVendorId);
-    if(ov) ov.paidAmount = Math.max(0, (ov.paidAmount||0) - oldAmount);
-  }
+  const newVendor = document.getElementById('e-vendor').value||'';
+  if(!newVendor){showToast('❌ Select a vendor (use "Others" if none)');return;}
+  const newAmt = parseFloat(document.getElementById('e-amt').value)||0;
+  if(newAmt<=0){showToast('❌ Enter a valid amount');return;}
   e.category    = document.getElementById('e-cat').value;
   e.event       = document.getElementById('e-event').value;
-  e.amount      = parseFloat(document.getElementById('e-amt').value)||0;
-  e.vendorId    = document.getElementById('e-vendor').value||'';
+  e.amount      = newAmt;
+  e.vendorId    = newVendor;
   e.description = document.getElementById('e-desc').value.trim();
   e.date        = document.getElementById('e-date').value;
-  // Apply new vendor paidAmount
-  if(e.vendorId){
-    const nv = S.vendors.find(v => v.id === e.vendorId);
-    if(nv){
-      nv.paidAmount = (nv.paidAmount||0) + e.amount;
-      if(nv.paidAmount >= (nv.totalAmount||0) && nv.status !== 'paid') nv.status = 'paid';
-    }
-  }
   await saveS(); closeM(); renderTab(); showToast('✅ Expense updated!');
 }
 
@@ -2436,13 +2498,13 @@ function openSavingsModal(){
 
 function openExpenseModal(){
   const catOpts=allCats().map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
-  const vendorOpts=`<option value="">-- None --</option>`+S.vendors.map(v=>`<option value="${v.id}">${getCat(v.category).emoji} ${v.name}</option>`).join('');
+  const vendorOpts=vendorOptsHtml();
   openM(`
     <div class="m-title serif">Add Expense 🧾</div>
     <div class="fg"><label class="fl">Category</label><select class="fi" id="e-cat">${catOpts}</select></div>
     <div class="fg"><label class="fl">Event</label><select class="fi" id="e-event"><option value="wedding">💒 Wedding</option><option value="engagement">💍 Engagement</option></select></div>
     <div class="fg"><label class="fl">Amount (₹)</label><input class="fi" type="number" id="e-amt" placeholder="e.g. 50000" inputmode="numeric"></div>
-    <div class="fg"><label class="fl">Link to Vendor (optional)</label><select class="fi" id="e-vendor">${vendorOpts}</select></div>
+    <div class="fg"><label class="fl">Vendor * <span style="font-size:11px;color:var(--text3)">(pick "Others" if no specific vendor)</span></label><select class="fi" id="e-vendor" onchange="prefillCatFromVendor()">${vendorOpts}</select></div>
     <div class="fg"><label class="fl">Description (optional)</label><input class="fi" type="text" id="e-desc" placeholder="e.g. Venue booking advance"></div>
     <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="e-date"></div>
     <button class="btn" onclick="addExpense()">Add Expense</button>`);
@@ -2483,7 +2545,7 @@ function openVendorModal(editId){
     <div class="fg"><label class="fl">Category</label><select class="fi" id="v-cat">${cats}</select></div>
     <div class="fg"><label class="fl">Phone (optional)</label><input class="fi" type="tel" id="v-phone" placeholder="+91 98765 43210" inputmode="tel" value="${v?v.phone||'':''}"></div>
     <div class="fg"><label class="fl">Total Amount (₹)</label><input class="fi" type="number" id="v-total" placeholder="e.g. 200000" inputmode="numeric" value="${v?v.totalAmount||'':''}"></div>
-    <div class="fg"><label class="fl">Amount Paid (₹)</label><input class="fi" type="number" id="v-paid" placeholder="0" inputmode="numeric" value="${v?v.paidAmount||'':''}"></div>
+    <div class="fg"><label class="fl">Amount Paid</label><div style="font-size:13px;color:var(--text3)">Auto-calculated from expenses linked to this vendor${v?`: <strong style="color:var(--text)">${fmt(v.paidAmount||0)}</strong>`:''}. Log payments from the Money tab.</div></div>
     <div class="fg"><label class="fl">Status</label><select class="fi" id="v-status">${sts}</select></div>
     <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" type="text" id="v-notes" placeholder="Any details about this vendor" value="${v?v.notes||'':''}"></div>
     <button class="btn" onclick="${v?`saveVendor('${editId}')`:'addVendor()'}">${v?'Save Changes':'Add Vendor'}</button>
@@ -2544,6 +2606,7 @@ async function addExpense(){
   const vendorId=document.getElementById('e-vendor').value||'';
   const description=document.getElementById('e-desc').value.trim();
   const date=document.getElementById('e-date').value||new Date().toISOString().split('T')[0];
+  if(!vendorId){showToast('❌ Select a vendor (use "Others" if none)');return;}
   if(!amount||amount<=0){showToast('❌ Enter a valid amount');return;}
 
   // Auto-fill description from vendor name if empty
@@ -2555,18 +2618,8 @@ async function addExpense(){
 
   S.expenses.push({id:uid(),date,category,event,amount,description:desc,vendorId});
 
-  // Update vendor paidAmount if linked
-  if(vendorId){
-    const v=S.vendors.find(v=>v.id===vendorId);
-    if(v){
-      v.paidAmount=(v.paidAmount||0)+amount;
-      if(v.paidAmount>=(v.totalAmount||0) && v.status!=='paid') v.status='paid';
-      else if(v.paidAmount>0 && v.status==='shortlisted') v.status='advance';
-    }
-  }
-
-  await saveS(); closeM(); renderTab();
-  showToast(vendorId?'✅ Expense added & vendor updated!':'✅ Expense added!');
+  await saveS(); closeM(); renderTab();   // saveS() recalculates vendor paid/status
+  showToast('✅ Expense added & vendor updated!');
   if(S.sheetsUrl) syncToSheets(true);
 }
 async function setGoal(){
@@ -2595,7 +2648,7 @@ async function addVendor(){
   const category=document.getElementById('v-cat').value;
   const phone=document.getElementById('v-phone').value.trim();
   const totalAmount=parseFloat(document.getElementById('v-total').value)||0;
-  const paidAmount=parseFloat(document.getElementById('v-paid').value)||0;
+  const paidAmount=0; // derived from linked expenses
   const status=document.getElementById('v-status').value;
   const notes=document.getElementById('v-notes').value.trim();
   if(!name){showToast('❌ Enter vendor name');return;}
@@ -2608,7 +2661,6 @@ async function saveVendor(id){
   v.category=document.getElementById('v-cat').value;
   v.phone=document.getElementById('v-phone').value.trim();
   v.totalAmount=parseFloat(document.getElementById('v-total').value)||0;
-  v.paidAmount=parseFloat(document.getElementById('v-paid').value)||0;
   v.status=document.getElementById('v-status').value;
   v.notes=document.getElementById('v-notes').value.trim();
   await saveS(); closeM(); renderTab(); showToast('✅ Vendor updated!');
@@ -2652,15 +2704,6 @@ async function delSaving(id){
 }
 async function delExpense(id){
   if(!confirm('Delete this expense?')) return;
-  const exp=S.expenses.find(e=>e.id===id);
-  // Reverse vendor paidAmount if linked
-  if(exp?.vendorId){
-    const v=S.vendors.find(v=>v.id===exp.vendorId);
-    if(v){
-      v.paidAmount=Math.max(0,(v.paidAmount||0)-exp.amount);
-      if(v.paidAmount===0 && v.status==='paid') v.status='advance';
-    }
-  }
   S.expenses=S.expenses.filter(e=>e.id!==id);
   await saveS(); renderTab();
 }
@@ -2847,6 +2890,8 @@ function showEngagementBanner(){
 }
 async function init(){
   await loadS();
+  let _migReport=null;
+  if(!IS_READONLY){ _migReport=migrateV2(); if(_migReport) await saveS(); } else { recalcVendors(); }
   // Start real-time Firebase sync listener
   startRealtimeSync();
   // Desktop: show inline countdown, hide mobile row; inject sidebar footer
@@ -2926,6 +2971,7 @@ async function init(){
   }
 
   renderTab();
+  if(_migReport) setTimeout(()=>showMigrationReport(_migReport),600);
 }
 init();
 </script>
